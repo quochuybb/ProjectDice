@@ -110,7 +110,6 @@ public static class DiceRoller
         var sumLessCard = cards.FirstOrDefault(c => c.tag == CardTag.SumConstraint && c.sumConstraintType == SumConstraintType.Less);
         var sumGreaterCard = cards.FirstOrDefault(c => c.tag == CardTag.SumConstraint && c.sumConstraintType == SumConstraintType.Greater);
 
-        // --- INITIAL VALIDATION: Check for illegal card counts ---
         if (forceValueCards.Count > 2) return (true, forceValueCards);
         if (cards.Count(c => c.tag == CardTag.SumConstraint && c.sumConstraintType == SumConstraintType.Less) > 1)
             return (true, cards.Where(c => c.tag == CardTag.SumConstraint && c.sumConstraintType == SumConstraintType.Less).ToList());

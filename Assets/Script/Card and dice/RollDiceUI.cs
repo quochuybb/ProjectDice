@@ -48,13 +48,11 @@ public class RollDiceUI : MonoBehaviour
         }
     }
 
-    // MODIFIED: Now receives the isImpossible flag to control the Roll button.
     private void UpdateVisualState(List<CardData> hand, List<CardData> selection, bool isImpossible)
     {
         currentHandCache = hand;
 
-        // --- THE KEY FIX ---
-        // Enable or disable the roll button based on the validity of the stack.
+
         rollButton.interactable = !isImpossible;
 
         for (int i = 0; i < cardButtons.Count; i++)
@@ -82,8 +80,6 @@ public class RollDiceUI : MonoBehaviour
         }
         else
         {
-            // This can still happen if the sum rules make a "possible" stack have no outcomes.
-            // e.g. Force 6, Force 6, Sum is 5
             die1Text.text = "X";
             die2Text.text = "X";
         }
