@@ -10,6 +10,7 @@ public class CharacterSheet : ScriptableObject
     [Header("Combat Stats")]
     public float maxHealth;
     public float energy;
+    public float energyRegen; // <-- ADD THIS LINE
     public float might;
     public float intelligence;
     public float armor;

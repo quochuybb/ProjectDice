@@ -14,22 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Player
   characterSprite: {fileID: 7315897641784372060, guid: e7d77189b669c43d38934a3cce5e05b5, type: 3}
-  maxHealth:
-    baseValue: 100
-  energy:
-    baseValue: 30
-  might:
-    baseValue: 10
-  intelligence:
-    baseValue: 10
-  armor:
-    baseValue: 0
-  speed:
-    baseValue: 10
-  grit:
-    baseValue: 0
-  luck:
-    baseValue: 0
-  growth:
-    baseValue: 0
-  startingSkills: []
+  maxHealth: 100
+  energy: 30
+  energyRegen: 15
+  might: 10
+  intelligence: 10
+  armor: 0
+  speed: 10
+  grit: 0
+  luck: 0
+  growth: 0
+  startingSkills:
+  - {fileID: 11400000, guid: 34899e7896a9cf4468f80c1ee9d3fb16, type: 2}
