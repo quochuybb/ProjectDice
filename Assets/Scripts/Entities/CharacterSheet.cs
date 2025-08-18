@@ -8,17 +8,18 @@ public class CharacterSheet : ScriptableObject
     public Sprite characterSprite;
 
     [Header("Combat Stats")]
-    public Stat maxHealth;
-    public Stat energy;
-    public Stat might;
-    public Stat intelligence;
-    public Stat armor;
-    public Stat speed;
-    public Stat grit;
+    public float maxHealth;
+    public float energy;
+    public float might;
+    public float intelligence;
+    public float armor;
+    public float speed;
+    public float grit;
+
 
     [Header("Board Stats")]
-    public Stat luck;
-    public Stat growth;
+    public float luck;
+    public float growth;
 
     [Header("Skills")]
     public Skill[] startingSkills;
