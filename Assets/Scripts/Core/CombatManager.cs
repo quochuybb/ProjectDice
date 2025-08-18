@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum CombatState { START, PLAYERTURN, ENEMYTURN, WON, LOST }
@@ -10,9 +11,6 @@ public class CombatManager : MonoBehaviour
     public Combatant playerCombatant;
     public Combatant enemyCombatant;
     
-    // We will hook up the UI later. For now, we'll use logs.
-    // public CombatUI combatUI; 
-
     void Start()
     {
         state = CombatState.START;
@@ -22,21 +20,19 @@ public class CombatManager : MonoBehaviour
     IEnumerator SetupCombat()
     {
         Debug.Log("Setting up combat...");
-        // Any setup animations or introductions go here
         yield return new WaitForSeconds(1f);
-
-        // Your GDD says Speed determines turn order. We'll start with player first for simplicity.
         state = CombatState.PLAYERTURN;
-        PlayerTurn();
+        StartCoroutine(PlayerTurn());
     }
 
-    void PlayerTurn()
+    IEnumerator PlayerTurn()
     {
+        // Regenerate energy at the start of the player's turn
+        playerCombatant.RegenerateEnergy();
+        yield return new WaitForSeconds(0.5f);
         Debug.Log("Player's Turn. Select an action.");
-        // The system will now wait for player input (e.g., clicking a UI button)
     }
-
-    // This function will be called by a UI button
+    
     public void OnPlayerSkillSelection(Skill skill)
     {
         if (state != CombatState.PLAYERTURN)
@@ -48,8 +44,7 @@ public class CombatManager : MonoBehaviour
     IEnumerator PlayerAttack(Skill skill)
     {
         playerCombatant.UseSkill(skill, enemyCombatant);
-        
-        yield return new WaitForSeconds(1.5f); // Wait for animations/VFX
+        yield return new WaitForSeconds(1.5f); 
 
         if (enemyCombatant.currentHealth <= 0)
         {
@@ -63,15 +58,46 @@ public class CombatManager : MonoBehaviour
         }
     }
     
+    // --- THIS METHOD IS COMPLETELY REWRITTEN FOR AI ---
     IEnumerator EnemyTurn()
     {
         Debug.Log("Enemy's Turn.");
-        yield return new WaitForSeconds(1f);
-
-        // Basic AI: Use the first skill available
-        Skill enemySkill = enemyCombatant.characterSheet.startingSkills[0];
-        enemyCombatant.UseSkill(enemySkill, playerCombatant);
         
+        // Regenerate energy at the start of the enemy's turn
+        enemyCombatant.RegenerateEnergy();
+        yield return new WaitForSeconds(1f);
+        
+        // --- AI LOGIC START ---
+        
+        // 1. Get a list of all skills the enemy *can afford* to use.
+        var allSkills = enemyCombatant.characterSheet.startingSkills;
+        var affordableSkills = new List<Skill>();
+        foreach (var skill in allSkills)
+        {
+            if (skill.energyCost <= enemyCombatant.currentEnergy)
+            {
+                affordableSkills.Add(skill);
+            }
+        }
+
+        // 2. Decide what to do.
+        if (affordableSkills.Count > 0)
+        {
+            // Pick a random skill from the affordable list.
+            int randomIndex = Random.Range(0, affordableSkills.Count);
+            Skill skillToUse = affordableSkills[randomIndex];
+
+            // Use the skill on the player
+            enemyCombatant.UseSkill(skillToUse, playerCombatant);
+        }
+        else
+        {
+            // If the enemy can't afford any skills, it passes the turn.
+            Debug.Log($"<color=orange>{enemyCombatant.characterSheet.name} has no affordable skills and passes its turn.</color>");
+        }
+
+        // --- AI LOGIC END ---
+
         yield return new WaitForSeconds(1.5f);
 
         if (playerCombatant.currentHealth <= 0)
@@ -82,7 +108,7 @@ public class CombatManager : MonoBehaviour
         else
         {
             state = CombatState.PLAYERTURN;
-            PlayerTurn();
+            StartCoroutine(PlayerTurn());
         }
     }
 
@@ -90,13 +116,11 @@ public class CombatManager : MonoBehaviour
     {
         if(state == CombatState.WON)
         {
-            Debug.Log("You Won!");
-            // Transition to reward screen or back to the board
+            Debug.Log("<color=green>You Won!</color>");
         }
         else if (state == CombatState.LOST)
         {
-            Debug.Log("You Lost.");
-            // Transition to death/reset sequence
+            Debug.Log("<color=red>You Lost.</color>");
         }
     }
 }
