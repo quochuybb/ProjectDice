@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
   m_Name: Goo Slam
   m_EditorClassIdentifier: 
-  skillName: 
+  skillName: Goo Slam
   description: 
-  rarity: 
-  element: 
-  energyCost: 0
+  rarity: Common
+  element: None
+  energyCost: 25
   cooldown: 0
-  baseDamage: 0
-  mightRatio: 0
+  baseDamage: 20
+  mightRatio: 1.5

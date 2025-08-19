@@ -7,10 +7,10 @@ public enum CombatState { START, PLAYERTURN, ENEMYTURN, WON, LOST }
 public class CombatManager : MonoBehaviour
 {
     public CombatState state;
-
     public Combatant playerCombatant;
     public Combatant enemyCombatant;
-    
+    [SerializeField] private CombatUI combatUI;
+
     void Start()
     {
         state = CombatState.START;
@@ -20,6 +20,21 @@ public class CombatManager : MonoBehaviour
     IEnumerator SetupCombat()
     {
         Debug.Log("Setting up combat...");
+
+        // --- UI INITIALIZATION (Now cleaner) ---
+        combatUI.SetupPlayerUI(playerCombatant);
+        combatUI.SetupEnemyUI(enemyCombatant);
+        combatUI.CreatePlayerSkillButtons(playerCombatant, this);
+
+        // --- SUBSCRIBE TO EVENTS (Now safe and robust) ---
+        playerCombatant.OnHealthChanged += combatUI.UpdatePlayerHealth;
+        // When energy changes, we need to update the whole stat block for the player.
+        playerCombatant.OnEnergyChanged += (current, max) => combatUI.UpdatePlayerStats(playerCombatant); 
+
+        enemyCombatant.OnHealthChanged += combatUI.UpdateEnemyHealth;
+        // Same for the enemy.
+        enemyCombatant.OnEnergyChanged += (current, max) => combatUI.UpdateEnemyStats(enemyCombatant);
+
         yield return new WaitForSeconds(1f);
         state = CombatState.PLAYERTURN;
         StartCoroutine(PlayerTurn());

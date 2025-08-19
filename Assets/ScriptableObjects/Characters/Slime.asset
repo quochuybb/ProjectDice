@@ -14,22 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Slime
   characterSprite: {fileID: 2326333024471168493, guid: 97ba893235bb5b663a32f7b7be751304, type: 3}
-  maxHealth:
-    baseValue: 60
-  energy:
-    baseValue: 20
-  might:
-    baseValue: 20
-  intelligence:
-    baseValue: 5
-  armor:
-    baseValue: 10
-  speed:
-    baseValue: 5
-  grit:
-    baseValue: 0
-  luck:
-    baseValue: 0
-  growth:
-    baseValue: 0
-  startingSkills: []
+  maxHealth: 60
+  energy: 20
+  energyRegen: 5
+  might: 10
+  intelligence: 5
+  armor: 10
+  speed: 5
+  grit: 0
+  luck: 0
+  growth: 0
+  startingSkills:
+  - {fileID: 11400000, guid: 3114bcb7487dd92499a089133309ac6a, type: 2}
+  - {fileID: 11400000, guid: d598d1b9df88d6a4a9055f7c68660e9b, type: 2}

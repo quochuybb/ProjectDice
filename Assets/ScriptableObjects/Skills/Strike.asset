@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   rarity: Common
   element: None
-  energyCost: 0
+  energyCost: 15
   cooldown: 0
   baseDamage: 5
-  mightRatio: 1
+  mightRatio: 2
