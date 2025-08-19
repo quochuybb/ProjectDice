@@ -1,8 +1,3 @@
-public enum StatModType
-{
-    Flat,       // Adds a flat value, calculated first.
-    Percent     // Adds a percentage, calculated after all flat bonuses.
-}
 
 public class StatModifier
 {

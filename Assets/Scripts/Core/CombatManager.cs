@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum CombatState { START, PLAYERTURN, ENEMYTURN, WON, LOST }
+
 
 public class CombatManager : MonoBehaviour
 {
