@@ -1,67 +1,62 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events; // Make sure to add this!
 
-// Add this attribute right above the class definition
 [RequireComponent(typeof(Combatant))]
 public class InventoryComponent : MonoBehaviour
 {
-    // We can make this private now, as we'll get the reference reliably
-    private Combatant combatant; 
+    // --- ADD THIS EVENT ---
+    public UnityAction<List<Item>> OnInventoryChanged;
+
+    private Combatant combatant;
     private CharacterStats characterStats;
 
     public List<Item> equippedItems = new List<Item>();
     [SerializeField] private List<Item> startingItems;
 
-    // We can go back to using Awake() for getting references, 
-    // because this script now has a hard dependency on Combatant.
     void Awake()
     {
-        // Get the entire Combatant component.
         combatant = GetComponent<Combatant>();
-        
-        // The Combatant's Stats property is still set in its own Awake().
-        // We will get the reference to Stats in Start() to be safe.
     }
 
     void Start()
     {
-        // Get the reference here, after all Awake() calls are complete.
         characterStats = combatant.Stats;
-
         foreach (Item item in startingItems)
         {
             Equip(item);
         }
     }
 
-    // ... (The rest of the script remains the same)
     public void Equip(Item item)
     {
-        if (equippedItems.Contains(item))
-            return;
-
+        if (equippedItems.Contains(item)) return;
         equippedItems.Add(item);
-        Debug.Log($"Equipped: {item.itemName}");
-
+        
         foreach (var bonus in item.bonuses)
         {
             StatModifier mod = new StatModifier(bonus.value, bonus.type, item);
             GetStat(bonus.stat)?.AddModifier(mod);
         }
+        
+        // --- INVOKE THE EVENT ---
+        OnInventoryChanged?.Invoke(equippedItems);
+        Debug.Log($"Equipped: {item.itemName}");
     }
 
     public void Unequip(Item item)
     {
-        if (!equippedItems.Contains(item))
-            return;
-
+        if (!equippedItems.Contains(item)) return;
         equippedItems.Remove(item);
-        Debug.Log($"Unequipped: {item.itemName}");
         
         foreach(var bonus in item.bonuses)
         {
             GetStat(bonus.stat)?.RemoveAllModifiersFromSource(item);
         }
+
+        // --- INVOKE THE EVENT ---
+        OnInventoryChanged?.Invoke(equippedItems);
+        Debug.Log($"Unequipped: {item.itemName}");
     }
     
     private Stat GetStat(StatType type)

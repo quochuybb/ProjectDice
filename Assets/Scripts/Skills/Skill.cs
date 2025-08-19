@@ -1,5 +1,9 @@
 using UnityEngine;
 
+// --- ADD THESE ENUMS AT THE TOP OF THE FILE ---
+public enum SkillEffectType { Damage, Healing }
+public enum TargetType { Enemy, Self }
+
 [CreateAssetMenu(fileName = "New Skill", menuName = "Characters/Skill")]
 public class Skill : ScriptableObject
 {
@@ -7,7 +11,6 @@ public class Skill : ScriptableObject
     public string skillName;
     [TextArea]
     public string description;
-    // We will use enums for Rarity, Element, etc. later for robustness.
     public string rarity; 
     public string element;
 
@@ -15,12 +18,16 @@ public class Skill : ScriptableObject
     public int energyCost;
     public int cooldown;
 
-    [Header("Mechanical Effects")]
+    // --- NEW FIELDS FOR FLEXIBILITY ---
+    [Header("Targeting & Effect")]
+    public SkillEffectType effectType;
+    public TargetType targetType;
+
+    [Header("Damage Effect")]
     public int baseDamage;
     public float mightRatio;
     
-    // Future additions based on your GDD:
-    // public TargetType targetType;
-    // public StatusEffect appliedStatus;
-    // public DetonationType detonationType;
+    [Header("Healing Effect")]
+    public int baseHeal;
+    public float intelligenceRatio;
 }

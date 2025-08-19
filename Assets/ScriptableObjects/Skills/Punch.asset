@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
-  m_Name: Strike
+  m_Name: Punch
   m_EditorClassIdentifier: 
-  skillName: Strike
+  skillName: Punch
   description: 
   rarity: Common
   element: None
-  energyCost: 20
+  energyCost: 15
   cooldown: 0
   effectType: 0
   targetType: 0
   baseDamage: 5
-  mightRatio: 2
+  mightRatio: 1
   baseHeal: 0
   intelligenceRatio: 0

@@ -28,8 +28,8 @@ public class CombatManager : MonoBehaviour
 
         // --- SUBSCRIBE TO EVENTS (Now safe and robust) ---
         playerCombatant.OnHealthChanged += combatUI.UpdatePlayerHealth;
-        // When energy changes, we need to update the whole stat block for the player.
-        playerCombatant.OnEnergyChanged += (current, max) => combatUI.UpdatePlayerStats(playerCombatant); 
+        playerCombatant.OnEnergyChanged += (current, max) => combatUI.UpdatePlayerStats(playerCombatant);  
+        playerCombatant.GetComponent<InventoryComponent>().OnInventoryChanged += combatUI.UpdateInventoryUI;
 
         enemyCombatant.OnHealthChanged += combatUI.UpdateEnemyHealth;
         // Same for the enemy.
