@@ -170,9 +170,21 @@ public class Combatant : MonoBehaviour
         for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
         {
             var effect = activeStatusEffects[i];
+
             if (effect.Classification == EffectClassification.Buff)
             {
+                // --- THE CRUCIAL NEW LOGIC ---
+                if (effect.IsNewlyApplied)
+                {
+                    // This buff was just applied this turn.
+                    // Don't tick its duration down. Just unset the flag.
+                    effect.IsNewlyApplied = false;
+                    continue; // Skip to the next effect in the list
+                }
+                // --- END OF NEW LOGIC ---
+
                 effect.Duration--;
+
                 if (effect.Duration <= 0)
                 {
                     Debug.Log($"<color=grey>{characterSheet.name}'s {effect.Type} buff has expired at turn end.</color>");
