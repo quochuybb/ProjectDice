@@ -9,9 +9,9 @@ public class Skill : ScriptableObject
     public string skillName;
     [TextArea]
     public string description;
-    
+
     // --- THE CHANGED LINES ---
-    public Rarity rarity; 
+    public Rarity rarity;
     public ElementType element;
     // --- END OF CHANGES ---
 
@@ -26,8 +26,20 @@ public class Skill : ScriptableObject
     [Header("Damage Effect")]
     public int baseDamage;
     public float mightRatio;
-    
+
     [Header("Healing Effect")]
     public int baseHeal;
     public float intelligenceRatio;
+
+    [Header("Status Effect")]
+    [Tooltip("Does this skill apply a status effect? If this a ")]
+    public bool appliesStatusEffect;
+    public StatusEffectType effectToApply;
+    [Tooltip("How many turns does the effect last?")]
+    public int effectDuration;
+
+    [Tooltip("Classification for the tickdown system")]
+    public EffectClassification effectClassification;
+    
+    
 }

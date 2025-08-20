@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections.Generic; // For List
+using System.Linq; // For Find
 
 [RequireComponent(typeof(InventoryComponent))] // It's good practice to keep this here
 public class Combatant : MonoBehaviour
@@ -13,6 +15,9 @@ public class Combatant : MonoBehaviour
     // We add an event for Energy, just like we have for Health. This is vital for UI.
     public UnityAction<int, int> OnHealthChanged;
     public UnityAction<int, int> OnEnergyChanged;
+
+    public List<StatusEffect> activeStatusEffects = new List<StatusEffect>();
+    public UnityAction<List<StatusEffect>> OnStatusEffectsChanged;
 
     void Awake()
     {
@@ -61,32 +66,121 @@ public class Combatant : MonoBehaviour
 
     public void UseSkill(Skill skill, Combatant target)
     {
-        if (currentEnergy < skill.energyCost)
+        // --- EMPOWER LOGIC ---
+        bool isEmpowered = HasStatusEffect(StatusEffectType.Empower);
+        int finalEnergyCost = isEmpowered ? 0 : skill.energyCost;
+
+        if (currentEnergy < finalEnergyCost)
         {
             Debug.Log($"<color=orange>{characterSheet.name} does not have enough energy for {skill.skillName}!</color>");
-            return; // Exit the method early if not enough energy
+            return;
         }
-        
-        currentEnergy -= skill.energyCost;
-        OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
-        Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({skill.energyCost} EN cost)");
 
-        // --- NEW LOGIC USING A SWITCH STATEMENT ---
+        currentEnergy -= finalEnergyCost;
+        if (isEmpowered)
+        {
+            Debug.Log($"<color=yellow>Empower consumed!</color>");
+            RemoveStatusEffect(StatusEffectType.Empower);
+        }
+        OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
+        Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
+
+        // Determine the target for effects
+        Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
+
+        // Apply skill's primary effect (Damage/Heal)
         switch (skill.effectType)
         {
             case SkillEffectType.Damage:
-                // This assumes damage skills always target an enemy.
                 int totalDamage = skill.baseDamage + (int)(Stats.Might.Value * skill.mightRatio);
-                Debug.Log($"It deals {totalDamage} damage to {target.characterSheet.name}.");
-                target.TakeDamage(totalDamage);
+                effectTarget.TakeDamage(totalDamage);
                 break;
-
             case SkillEffectType.Healing:
-                // This assumes healing skills always target self.
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
-                this.ReceiveHeal(totalHeal); // 'this' refers to the combatant using the skill
+                effectTarget.ReceiveHeal(totalHeal);
                 break;
         }
+
+        // Apply skill's status effect, if any
+        if (skill.appliesStatusEffect)
+        {
+            // --- PASS THE NEW PARAMETER ---
+            effectTarget.ApplyStatusEffect(new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification));
+        }
+    }
+
+    // --- NEW METHODS FOR STATUS EFFECT MANAGEMENT ---
+    public bool HasStatusEffect(StatusEffectType type)
+    {
+        return activeStatusEffects.Any(effect => effect.Type == type);
+    }
+
+    public void ApplyStatusEffect(StatusEffect effect)
+    {
+        // The rest of this method is the same, just the signature changed
+        activeStatusEffects.Add(effect);
+        Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
+        
+        if (effect.Type == StatusEffectType.Fortify)
+        {
+            StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
+            Stats.Armor.AddModifier(armorBuff);
+        }
+        
+        OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+    }
+    
+    public void RemoveStatusEffect(StatusEffectType type)
+    {
+        StatusEffect effectToRemove = activeStatusEffects.FirstOrDefault(e => e.Type == type);
+        if (effectToRemove != null)
+        {
+            // --- FORTIFY CLEANUP ---
+            if (effectToRemove.Type == StatusEffectType.Fortify)
+            {
+                Stats.Armor.RemoveAllModifiersFromSource(effectToRemove);
+            }
+            
+            activeStatusEffects.Remove(effectToRemove);
+            OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+        }
+    }
+
+    public void TickDownDebuffsAtTurnStart()
+    {
+        // Iterate backwards to safely remove items from the list while looping
+        for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
+        {
+            var effect = activeStatusEffects[i];
+            if (effect.Classification == EffectClassification.Debuff)
+            {
+                effect.Duration--;
+                if (effect.Duration <= 0)
+                {
+                    Debug.Log($"<color=grey>{characterSheet.name}'s {effect.Type} debuff has expired at turn start.</color>");
+                    RemoveStatusEffect(effect.Type);
+                }
+            }
+        }
+        OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+    }
+
+    public void TickDownBuffsAtTurnEnd()
+    {
+        for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
+        {
+            var effect = activeStatusEffects[i];
+            if (effect.Classification == EffectClassification.Buff)
+            {
+                effect.Duration--;
+                if (effect.Duration <= 0)
+                {
+                    Debug.Log($"<color=grey>{characterSheet.name}'s {effect.Type} buff has expired at turn end.</color>");
+                    RemoveStatusEffect(effect.Type);
+                }
+            }
+        }
+        OnStatusEffectsChanged?.Invoke(activeStatusEffects);
     }
 
     private void Die()

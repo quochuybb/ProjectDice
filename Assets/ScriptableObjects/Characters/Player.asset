@@ -16,7 +16,7 @@ MonoBehaviour:
   characterSprite: {fileID: 7315897641784372060, guid: e7d77189b669c43d38934a3cce5e05b5, type: 3}
   maxHealth: 100
   energy: 30
-  energyRegen: 15
+  energyRegen: 10
   might: 10
   intelligence: 10
   armor: 0
@@ -26,5 +26,6 @@ MonoBehaviour:
   growth: 0
   startingSkills:
   - {fileID: 11400000, guid: 34899e7896a9cf4468f80c1ee9d3fb16, type: 2}
-  - {fileID: 11400000, guid: ab11f82b1f4e88b4dbf3dccefe7e9119, type: 2}
+  - {fileID: 11400000, guid: 94ab67d5a6734a54ca1fa1f866b35e09, type: 2}
   - {fileID: 11400000, guid: e39ea33a1ec03d841a9087141b230d99, type: 2}
+  - {fileID: 11400000, guid: c9759125972e5af4f880a1e0105c85fc, type: 2}

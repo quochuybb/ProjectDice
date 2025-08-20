@@ -40,3 +40,18 @@ public enum StatType
     Luck,
     Growth,
 }
+
+public enum StatusEffectType
+{
+    None,
+    Fortify,
+    Empower,
+    PowerUp, // Future
+    Weaken   // Future
+}
+
+public enum EffectClassification
+{
+    Buff,
+    Debuff
+}

@@ -28,8 +28,9 @@ public class CombatManager : MonoBehaviour
 
         // --- SUBSCRIBE TO EVENTS (Now safe and robust) ---
         playerCombatant.OnHealthChanged += combatUI.UpdatePlayerHealth;
-        playerCombatant.OnEnergyChanged += (current, max) => combatUI.UpdatePlayerStats(playerCombatant);  
+        playerCombatant.OnEnergyChanged += (current, max) => combatUI.UpdatePlayerStats(playerCombatant);
         playerCombatant.GetComponent<InventoryComponent>().OnInventoryChanged += combatUI.UpdateInventoryUI;
+        playerCombatant.OnStatusEffectsChanged += combatUI.UpdateStatusEffectsUI;
 
         enemyCombatant.OnHealthChanged += combatUI.UpdateEnemyHealth;
         // Same for the enemy.
@@ -42,11 +43,13 @@ public class CombatManager : MonoBehaviour
 
     IEnumerator PlayerTurn()
     {
-        // Regenerate energy at the start of the player's turn
+        playerCombatant.TickDownDebuffsAtTurnStart(); // Debuffs tick at start
         playerCombatant.RegenerateEnergy();
         yield return new WaitForSeconds(0.5f);
         Debug.Log("Player's Turn. Select an action.");
+        // The buff tick down will happen AFTER the player acts
     }
+
     
     public void OnPlayerSkillSelection(Skill skill)
     {
@@ -59,7 +62,11 @@ public class CombatManager : MonoBehaviour
     IEnumerator PlayerAttack(Skill skill)
     {
         playerCombatant.UseSkill(skill, enemyCombatant);
-        yield return new WaitForSeconds(1.5f); 
+        yield return new WaitForSeconds(1.5f);
+        
+        // --- NEW LOGIC: TICK BUFFS AT END OF ACTION ---
+        playerCombatant.TickDownBuffsAtTurnEnd();
+        yield return new WaitForSeconds(0.5f);
 
         if (enemyCombatant.currentHealth <= 0)
         {
@@ -76,9 +83,9 @@ public class CombatManager : MonoBehaviour
     // --- THIS METHOD IS COMPLETELY REWRITTEN FOR AI ---
     IEnumerator EnemyTurn()
     {
+
         Debug.Log("Enemy's Turn.");
-        
-        // Regenerate energy at the start of the enemy's turn
+        enemyCombatant.TickDownDebuffsAtTurnStart();
         enemyCombatant.RegenerateEnergy();
         yield return new WaitForSeconds(1f);
         
@@ -114,6 +121,10 @@ public class CombatManager : MonoBehaviour
         // --- AI LOGIC END ---
 
         yield return new WaitForSeconds(1.5f);
+        
+        // --- NEW LOGIC: TICK BUFFS AT END OF ACTION ---
+        enemyCombatant.TickDownBuffsAtTurnEnd();
+        yield return new WaitForSeconds(0.5f);
 
         if (playerCombatant.currentHealth <= 0)
         {

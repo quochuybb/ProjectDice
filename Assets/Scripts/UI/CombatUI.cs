@@ -21,6 +21,9 @@ public class CombatUI : MonoBehaviour
     [SerializeField] private Transform skillButtonContainer;
     [SerializeField] private GameObject skillButtonPrefab;
 
+    [Header("Status Effects")]
+    [SerializeField] private TMP_Text playerStatusText;
+
     public void SetupPlayerUI(Combatant combatant)
     {
         playerNameText.text = combatant.characterSheet.name;
@@ -101,5 +104,22 @@ public class CombatUI : MonoBehaviour
         }
 
         playerInventoryText.text = sb.ToString();
+    }
+
+        public void UpdateStatusEffectsUI(List<StatusEffect> effects)
+    {
+        if(effects == null || effects.Count == 0)
+        {
+            playerStatusText.text = "";
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("<b>Effects:</b>");
+        foreach(var effect in effects)
+        {
+            sb.AppendLine($"- {effect.Type} ({effect.Duration})");
+        }
+        playerStatusText.text = sb.ToString();
     }
 }

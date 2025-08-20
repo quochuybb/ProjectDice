@@ -10,21 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
-  m_Name: Strike
+  m_Name: Meditate
   m_EditorClassIdentifier: 
-  skillName: Strike
+  skillName: Meditate
   description: 
   rarity: 0
   element: 0
-  energyCost: 30
-  cooldown: 0
-  effectType: 0
-  targetType: 0
-  baseDamage: 5
-  mightRatio: 2
+  energyCost: 0
+  cooldown: 3
+  effectType: 1
+  targetType: 1
+  baseDamage: 0
+  mightRatio: 0
   baseHeal: 0
   intelligenceRatio: 0
-  appliesStatusEffect: 0
-  effectToApply: 0
-  effectDuration: 0
+  appliesStatusEffect: 1
+  effectToApply: 2
+  effectDuration: 2
   effectClassification: 0
