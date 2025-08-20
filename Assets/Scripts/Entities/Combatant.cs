@@ -19,6 +19,9 @@ public class Combatant : MonoBehaviour
     public List<StatusEffect> activeStatusEffects = new List<StatusEffect>();
     public UnityAction<List<StatusEffect>> OnStatusEffectsChanged;
 
+        public Dictionary<Skill, int> skillCooldowns = new Dictionary<Skill, int>();
+    public UnityAction OnCooldownsChanged;
+
     void Awake()
     {
         Stats = new CharacterStats(characterSheet);
@@ -66,7 +69,13 @@ public class Combatant : MonoBehaviour
 
     public void UseSkill(Skill skill, Combatant target)
     {
-        // --- EMPOWER LOGIC ---
+        // Add a check to prevent using a skill on cooldown (backend safety)
+        if (IsSkillOnCooldown(skill))
+        {
+            Debug.Log($"<color=orange>Cannot use {skill.skillName}, it is on cooldown!</color>");
+            return;
+        }
+
         bool isEmpowered = HasStatusEffect(StatusEffectType.Empower);
         int finalEnergyCost = isEmpowered ? 0 : skill.energyCost;
 
@@ -76,6 +85,8 @@ public class Combatant : MonoBehaviour
             return;
         }
 
+        // --- All checks passed, proceed to use the skill ---
+        
         currentEnergy -= finalEnergyCost;
         if (isEmpowered)
         {
@@ -84,6 +95,13 @@ public class Combatant : MonoBehaviour
         }
         OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
         Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
+        
+        // --- PUT THE SKILL ON COOLDOWN ---
+        if (skill.cooldown > 0)
+        {
+            skillCooldowns[skill] = skill.cooldown + 1;
+            OnCooldownsChanged?.Invoke(); // Notify UI that cooldowns have changed
+        }
 
         // Determine the target for effects
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
@@ -107,6 +125,34 @@ public class Combatant : MonoBehaviour
             // --- PASS THE NEW PARAMETER ---
             effectTarget.ApplyStatusEffect(new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification));
         }
+    }
+
+        // --- NEW HELPER & TICKDOWN METHODS ---
+    public bool IsSkillOnCooldown(Skill skill)
+    {
+        return skillCooldowns.ContainsKey(skill);
+    }
+    
+    public void TickDownCooldowns()
+    {
+        if (skillCooldowns.Count == 0) return;
+
+        // We use .ToList() to create a temporary copy of the keys,
+        // allowing us to safely remove items from the dictionary while iterating.
+        List<Skill> skillsOnCooldown = skillCooldowns.Keys.ToList();
+        bool changed = false;
+
+        foreach (Skill skill in skillsOnCooldown)
+        {
+            skillCooldowns[skill]--;
+            if (skillCooldowns[skill] <= 0)
+            {
+                skillCooldowns.Remove(skill);
+            }
+            changed = true;
+        }
+
+        if(changed) OnCooldownsChanged?.Invoke();
     }
 
     // --- NEW METHODS FOR STATUS EFFECT MANAGEMENT ---

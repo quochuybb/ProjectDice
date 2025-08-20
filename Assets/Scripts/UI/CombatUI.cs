@@ -20,9 +20,20 @@ public class CombatUI : MonoBehaviour
     [Header("Skill Bar")]
     [SerializeField] private Transform skillButtonContainer;
     [SerializeField] private GameObject skillButtonPrefab;
+    
+    // --- NEW LIST TO HOLD OUR BUTTONS ---
+    private List<SkillButtonUI> skillButtons = new List<SkillButtonUI>();
 
     [Header("Status Effects")]
     [SerializeField] private TMP_Text playerStatusText;
+
+    private class SkillButtonUI
+    {
+        public Skill associatedSkill;
+        public Button button;
+        public TMP_Text text;
+    }
+
 
     public void SetupPlayerUI(Combatant combatant)
     {
@@ -71,18 +82,63 @@ public class CombatUI : MonoBehaviour
 
     public void CreatePlayerSkillButtons(Combatant player, CombatManager combatManager)
     {
+        // Clear old buttons and the list
         foreach (Transform child in skillButtonContainer)
         {
             Destroy(child.gameObject);
         }
+        skillButtons.Clear();
 
+        // Create a new button for each skill
         foreach (Skill skill in player.characterSheet.startingSkills)
         {
             GameObject buttonGO = Instantiate(skillButtonPrefab, skillButtonContainer);
-            Button button = buttonGO.GetComponent<Button>();
-            TMP_Text buttonText = buttonGO.GetComponentInChildren<TMP_Text>();
-            buttonText.text = $"{skill.skillName}\n({skill.energyCost} EN)";
-            button.onClick.AddListener(() => combatManager.OnPlayerSkillSelection(skill));
+            
+            // Create a new SkillButtonUI instance and populate it
+            SkillButtonUI newButtonUI = new SkillButtonUI
+            {
+                associatedSkill = skill,
+                button = buttonGO.GetComponent<Button>(),
+                text = buttonGO.GetComponentInChildren<TMP_Text>()
+            };
+
+            // Add the listener
+            newButtonUI.button.onClick.AddListener(() => combatManager.OnPlayerSkillSelection(skill));
+            
+            // Add the new button object to our list
+            skillButtons.Add(newButtonUI);
+        }
+
+        // Do an initial update of the button states
+        UpdateSkillButtons(player);
+    }
+
+    public void UpdateSkillButtons(Combatant player)
+    {
+        // First, check if the player is empowered. This affects all buttons.
+        bool playerIsEmpowered = player.HasStatusEffect(StatusEffectType.Empower);
+
+        foreach (var sb in skillButtons)
+        {
+            bool enoughEnergy = player.currentEnergy >= sb.associatedSkill.energyCost;
+            bool onCooldown = player.IsSkillOnCooldown(sb.associatedSkill);
+
+            // --- THE NEW LOGIC ---
+            // A skill is usable if:
+            // 1. It is NOT on cooldown.
+            // 2. AND (You have enough energy OR you are empowered).
+            sb.button.interactable = !onCooldown && (enoughEnergy || playerIsEmpowered);
+            // --- END OF NEW LOGIC ---
+
+            // Update the text to show cooldown or energy cost
+            if (onCooldown)
+            {
+                sb.text.text = $"{sb.associatedSkill.skillName}\n({player.skillCooldowns[sb.associatedSkill]} T)";
+            }
+            else
+            {
+                sb.text.text = $"{sb.associatedSkill.skillName}\n({sb.associatedSkill.energyCost} EN)";
+            }
         }
     }
 

@@ -26,14 +26,25 @@ public class CombatManager : MonoBehaviour
         combatUI.SetupEnemyUI(enemyCombatant);
         combatUI.CreatePlayerSkillButtons(playerCombatant, this);
 
-        // --- SUBSCRIBE TO EVENTS (Now safe and robust) ---
+        // --- SUBSCRIBE TO EVENTS ---
         playerCombatant.OnHealthChanged += combatUI.UpdatePlayerHealth;
-        playerCombatant.OnEnergyChanged += (current, max) => combatUI.UpdatePlayerStats(playerCombatant);
+        playerCombatant.OnEnergyChanged += (current, max) => {
+            combatUI.UpdatePlayerStats(playerCombatant);
+            combatUI.UpdateSkillButtons(playerCombatant); // Also update buttons on energy change
+        };
         playerCombatant.GetComponent<InventoryComponent>().OnInventoryChanged += combatUI.UpdateInventoryUI;
-        playerCombatant.OnStatusEffectsChanged += combatUI.UpdateStatusEffectsUI;
+        
+        // --- THIS IS THE KEY CHANGE ---
+        // When status effects change, update BOTH the status display AND the skill buttons
+        playerCombatant.OnStatusEffectsChanged += (effects) => {
+            combatUI.UpdateStatusEffectsUI(effects);
+            combatUI.UpdateSkillButtons(playerCombatant);
+        };
+        // --- END OF KEY CHANGE ---
+        
+        playerCombatant.OnCooldownsChanged += () => combatUI.UpdateSkillButtons(playerCombatant);
 
         enemyCombatant.OnHealthChanged += combatUI.UpdateEnemyHealth;
-        // Same for the enemy.
         enemyCombatant.OnEnergyChanged += (current, max) => combatUI.UpdateEnemyStats(enemyCombatant);
 
         yield return new WaitForSeconds(1f);
@@ -43,11 +54,14 @@ public class CombatManager : MonoBehaviour
 
     IEnumerator PlayerTurn()
     {
-        playerCombatant.TickDownDebuffsAtTurnStart(); // Debuffs tick at start
+        playerCombatant.TickDownDebuffsAtTurnStart();
+        
+        // --- ADD COOLDOWN TICKDOWN ---
+        playerCombatant.TickDownCooldowns(); 
+
         playerCombatant.RegenerateEnergy();
         yield return new WaitForSeconds(0.5f);
         Debug.Log("Player's Turn. Select an action.");
-        // The buff tick down will happen AFTER the player acts
     }
 
     
