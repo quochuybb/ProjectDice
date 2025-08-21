@@ -48,8 +48,8 @@ public enum StatusEffectType
     Empower,
     Burn,
     Regeneration,
-    // ---
     PowerUp,
+    Vulnerable,
     Weaken
 }
 

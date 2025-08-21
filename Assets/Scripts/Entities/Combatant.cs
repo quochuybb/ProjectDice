@@ -55,11 +55,18 @@ public class Combatant : MonoBehaviour
         float damageReduction = (armor / (armor + 150));
         int finalDamage = Mathf.RoundToInt(damage * (1 - damageReduction));
 
+        // --- VULNERABLE LOGIC ---
+        if (HasStatusEffect(StatusEffectType.Vulnerable))
+        {
+            finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
+            Debug.Log($"<color=orange>Target is Vulnerable! Damage increased to {finalDamage}.</color>");
+        }
+        
         currentHealth -= finalDamage;
         if (currentHealth < 0) currentHealth = 0;
 
         OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
-        Debug.Log($"{characterSheet.name} takes {finalDamage} damage after {damageReduction * 100:F0}% reduction.");
+        Debug.Log($"{characterSheet.name} takes {finalDamage} damage after armor reduction.");
 
         if (currentHealth <= 0)
         {
@@ -69,79 +76,110 @@ public class Combatant : MonoBehaviour
 
     public void UseSkill(Skill skill, Combatant target)
     {
-        // --- Phase 1: Pre-checks (Guard Clauses) ---
-        // These checks will exit the method early if the skill cannot be used.
+        // =================================================================
+        // 1. PRE-CHECKS: Verify if the skill can be used at all.
+        // =================================================================
 
-        // Check 1: Is the skill on cooldown?
+        // Check if the skill is on cooldown.
         if (IsSkillOnCooldown(skill))
         {
             Debug.Log($"<color=orange>Cannot use {skill.skillName}, it is on cooldown!</color>");
-            return;
+            return; // Exit if on cooldown.
         }
 
-        // Check 2: Does the combatant have enough energy? (Factoring in Empower)
+        // Check for Empower buff to determine the real energy cost.
         bool isEmpowered = HasStatusEffect(StatusEffectType.Empower);
         int finalEnergyCost = isEmpowered ? 0 : skill.energyCost;
 
+        // Check if there is enough energy.
         if (currentEnergy < finalEnergyCost)
         {
             Debug.Log($"<color=orange>{characterSheet.name} does not have enough energy for {skill.skillName}!</color>");
-            return;
+            return; // Exit if not enough energy.
         }
 
+        // =================================================================
+        // 2. RESOURCE & COOLDOWN MANAGEMENT: Consume resources and apply cooldown.
+        // =================================================================
 
-        // --- Phase 2: Commit to Action (Pay the Costs) ---
-        // If we reach this point, the skill will definitely be used.
-
-        // Pay the energy cost and consume Empower if it was used.
+        // Consume energy.
         currentEnergy -= finalEnergyCost;
+        OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
+
+        // If Empower was used, consume the buff.
         if (isEmpowered)
         {
             Debug.Log($"<color=yellow>Empower consumed!</color>");
             RemoveStatusEffect(StatusEffectType.Empower);
         }
-        // Notify the UI that energy has changed.
-        OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
+
+        // Announce the action.
+        Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
 
         // Put the skill on cooldown if it has one.
         if (skill.cooldown > 0)
         {
             skillCooldowns[skill] = skill.cooldown;
-            // Notify the UI that cooldowns have changed.
             OnCooldownsChanged?.Invoke();
         }
 
+        // =================================================================
+        // 3. APPLY SKILL EFFECTS: Determine target and apply damage, healing, etc.
+        // =================================================================
 
-        // --- Phase 3: Apply the Effects ---
-
-        Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
-
-        // Determine the correct target for the skill's effects.
+        // Determine who the skill's effects will apply to.
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
 
-        // Apply the skill's primary effect (Damage or Healing).
+        // Handle the primary effect (Damage, Healing).
         switch (skill.effectType)
         {
             case SkillEffectType.Damage:
-                int totalDamage = skill.baseDamage + (int)(Stats.Might.Value * skill.mightRatio);
+                // Start with a neutral damage multiplier.
+                float damageMultiplier = 1.0f;
+
+                // Check for Power Up buff on the caster.
+                if (HasStatusEffect(StatusEffectType.PowerUp))
+                {
+                    damageMultiplier *= 1.5f;
+                    Debug.Log($"<color=yellow>Power Up consumed! Damage multiplied.</color>");
+                    RemoveStatusEffect(StatusEffectType.PowerUp);
+                }
+
+                // Check for Weaken debuff on the caster.
+                if (HasStatusEffect(StatusEffectType.Weaken))
+                {
+                    damageMultiplier *= 0.5f;
+                    Debug.Log($"<color=brown>Weaken consumed! Damage reduced.</color>");
+                    RemoveStatusEffect(StatusEffectType.Weaken);
+                }
+
+                // Calculate damage after buffs/debuffs are factored in.
+                int baseSkillDamage = skill.baseDamage + (int)(Stats.Might.Value * skill.mightRatio);
+                int totalDamage = Mathf.RoundToInt(baseSkillDamage * damageMultiplier);
+                
+                Debug.Log($"Deals {totalDamage} damage to {effectTarget.characterSheet.name}.");
                 effectTarget.TakeDamage(totalDamage);
                 break;
 
             case SkillEffectType.Healing:
+                // Calculate total healing amount.
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
-                effectTarget.ReceiveHeal(totalHeal);
+                // 'this' always receives the heal since healing is targeted at 'Self'.
+                this.ReceiveHeal(totalHeal); 
                 break;
         }
 
-        // Apply the skill's status effect, if it has one.
+        // =================================================================
+        // 4. APPLY STATUS EFFECTS: Apply any secondary status effects from the skill.
+        // =================================================================
         if (skill.appliesStatusEffect)
         {
-            // Create the new status effect object.
-            var newEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification);
-
-            // Apply the effect to the target, passing 'this' (the current Combatant) as the caster.
-            // This is crucial for calculating DoT/HoT damage based on the caster's stats.
-            effectTarget.ApplyStatusEffect(newEffect, this);
+            // Create the new status effect instance.
+            var newStatusEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification);
+            
+            // Apply the effect to the correct target, passing 'this' as the caster.
+            // The caster reference is needed to calculate DoT/HoT values based on the caster's stats.
+            effectTarget.ApplyStatusEffect(newStatusEffect, this);
         }
     }
 
@@ -222,50 +260,27 @@ public class Combatant : MonoBehaviour
         }
     }
 
-    public void TickDownDebuffsAtTurnStart()
+    public void TickDownStatusEffectsAtTurnEnd()
     {
         // Iterate backwards to safely remove items from the list while looping
         for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
         {
             var effect = activeStatusEffects[i];
-            if (effect.Classification == EffectClassification.Debuff)
+
+            // --- THE "NEWLY APPLIED" FLAG NOW APPLIES TO ALL EFFECTS ---
+            if (effect.IsNewlyApplied)
             {
-                effect.Duration--;
-                if (effect.Duration <= 0)
-                {
-                    Debug.Log($"<color=grey>{characterSheet.name}'s {effect.Type} debuff has expired at turn start.</color>");
-                    RemoveStatusEffect(effect.Type);
-                }
+                effect.IsNewlyApplied = false;
+                continue; // Skip to the next effect in the list
             }
-        }
-        OnStatusEffectsChanged?.Invoke(activeStatusEffects);
-    }
 
-    public void TickDownBuffsAtTurnEnd()
-    {
-        for (int i = activeStatusEffects.Count - 1; i >= 0; i--)
-        {
-            var effect = activeStatusEffects[i];
+            effect.Duration--;
 
-            if (effect.Classification == EffectClassification.Buff)
+            if (effect.Duration <= 0)
             {
-                // --- THE CRUCIAL NEW LOGIC ---
-                if (effect.IsNewlyApplied)
-                {
-                    // This buff was just applied this turn.
-                    // Don't tick its duration down. Just unset the flag.
-                    effect.IsNewlyApplied = false;
-                    continue; // Skip to the next effect in the list
-                }
-                // --- END OF NEW LOGIC ---
-
-                effect.Duration--;
-
-                if (effect.Duration <= 0)
-                {
-                    Debug.Log($"<color=grey>{characterSheet.name}'s {effect.Type} buff has expired at turn end.</color>");
-                    RemoveStatusEffect(effect.Type);
-                }
+                Debug.Log($"<color=grey>{characterSheet.name}'s {effect.Type} has expired at turn end.</color>");
+                // The existing RemoveStatusEffect method correctly handles cleanup (like for Fortify)
+                RemoveStatusEffect(effect.Type); 
             }
         }
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);

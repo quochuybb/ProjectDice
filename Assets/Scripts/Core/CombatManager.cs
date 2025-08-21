@@ -80,12 +80,15 @@ public class CombatManager : MonoBehaviour
 
     IEnumerator PlayerTurn()
     {
-        // --- PROCESS DOTS/HOTS FIRST ---
+        // 1. Process DoTs and HoTs first.
         playerCombatant.ProcessDoTsAndHoTs();
         
-        playerCombatant.TickDownDebuffsAtTurnStart();
+        // 2. Then, reduce cooldowns.
         playerCombatant.TickDownCooldowns(); 
+        
+        // 3. Finally, regenerate resources.
         playerCombatant.RegenerateEnergy();
+        
         yield return new WaitForSeconds(0.5f);
         Debug.Log("Player's Turn. Select an action.");
         combatUI.EnablePlayerActions();
@@ -102,13 +105,14 @@ public class CombatManager : MonoBehaviour
 
     IEnumerator PlayerAttack(Skill skill)
     {
-        // --- DISABLE BUTTONS AT THE START OF ACTION ---
         combatUI.DisablePlayerActions();
 
+        // Player takes their action here...
         playerCombatant.UseSkill(skill, enemyCombatant);
         yield return new WaitForSeconds(1.5f);
         
-        playerCombatant.TickDownBuffsAtTurnEnd();
+        // --- TICK DOWN ALL EFFECTS AT THE END OF THE TURN ---
+        playerCombatant.TickDownStatusEffectsAtTurnEnd();
         yield return new WaitForSeconds(0.5f);
 
         if (enemyCombatant.currentHealth <= 0)
@@ -123,53 +127,74 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    // --- THIS METHOD IS COMPLETELY REWRITTEN FOR AI ---
-    IEnumerator EnemyTurn()
+    private IEnumerator EnemyTurn()
     {
-
         Debug.Log("Enemy's Turn.");
+
+        // ===================================
+        // 1. START OF TURN PHASE
+        // ===================================
+        // DoTs and HoTs are processed first, before any actions.
         enemyCombatant.ProcessDoTsAndHoTs();
-        enemyCombatant.TickDownDebuffsAtTurnStart();
+
+        // Enemy cooldowns are ticked down (for future use).
+        enemyCombatant.TickDownCooldowns();
+
+        // Resources are regenerated.
         enemyCombatant.RegenerateEnergy();
+        
+        // A delay to pace the turn.
         yield return new WaitForSeconds(1f);
 
-        // --- AI LOGIC START ---
+        // ===================================
+        // 2. ACTION PHASE (AI LOGIC)
+        // ===================================
 
-        // 1. Get a list of all skills the enemy *can afford* to use.
+        // Get a list of all skills the enemy can currently afford to use.
         var allSkills = enemyCombatant.characterSheet.startingSkills;
         var affordableSkills = new List<Skill>();
         foreach (var skill in allSkills)
         {
-            if (skill.energyCost <= enemyCombatant.currentEnergy)
+            if (skill.energyCost <= enemyCombatant.currentEnergy && !enemyCombatant.IsSkillOnCooldown(skill))
             {
                 affordableSkills.Add(skill);
             }
         }
 
-        // 2. Decide what to do.
+        // Decide what action to take.
         if (affordableSkills.Count > 0)
         {
             // Pick a random skill from the affordable list.
             int randomIndex = Random.Range(0, affordableSkills.Count);
             Skill skillToUse = affordableSkills[randomIndex];
 
-            // Use the skill on the player
+            // Use the skill on the player.
             enemyCombatant.UseSkill(skillToUse, playerCombatant);
         }
         else
         {
             // If the enemy can't afford any skills, it passes the turn.
-            Debug.Log($"<color=orange>{enemyCombatant.characterSheet.name} has no affordable skills and passes its turn.</color>");
+            Debug.Log($"<color=orange>{enemyCombatant.characterSheet.name} has no affordable actions and passes its turn.</color>");
         }
 
-        // --- AI LOGIC END ---
-
+        // A delay for the action/animation to play out.
         yield return new WaitForSeconds(1.5f);
 
-        // --- NEW LOGIC: TICK BUFFS AT END OF ACTION ---
-        enemyCombatant.TickDownBuffsAtTurnEnd();
+        // ===================================
+        // 3. END OF TURN PHASE
+        // ===================================
+
+        // All status effects (both buffs and debuffs) are ticked down at the end.
+        enemyCombatant.TickDownStatusEffectsAtTurnEnd();
+        
+        // A short delay before transitioning.
         yield return new WaitForSeconds(0.5f);
 
+        // ===================================
+        // 4. STATE TRANSITION
+        // ===================================
+
+        // Check if the player was defeated by the enemy's action.
         if (playerCombatant.currentHealth <= 0)
         {
             state = CombatState.LOST;
@@ -177,6 +202,7 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
+            // If the player is still alive, transition back to the player's turn.
             state = CombatState.PLAYERTURN;
             StartCoroutine(PlayerTurn());
         }
@@ -205,14 +231,12 @@ public class CombatManager : MonoBehaviour
     // A new coroutine to handle the turn transition
     private IEnumerator SkipTurn()
     {
-        // First, disable all player actions to prevent double-clicks
         combatUI.DisablePlayerActions();
-
         Debug.Log("Player skips their turn.");
         
-        // We still need to tick down buffs at the end of the turn
-        playerCombatant.TickDownBuffsAtTurnEnd();
-        yield return new WaitForSeconds(0f);
+        // --- TICK DOWN ALL EFFECTS AT THE END OF THE TURN ---
+        playerCombatant.TickDownStatusEffectsAtTurnEnd();
+        yield return new WaitForSeconds(0.5f);
 
         state = CombatState.ENEMYTURN;
         StartCoroutine(EnemyTurn());
