@@ -74,6 +74,6 @@ public class Stat
         // Final formula from GDD
         finalValue *= (1 + sumPercentAdd);
 
-        return (float)Mathf.Round(finalValue);
+        return (float)Mathf.Ceil(finalValue);
     }
 }

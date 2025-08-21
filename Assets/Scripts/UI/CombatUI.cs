@@ -191,12 +191,36 @@ public class CombatUI : MonoBehaviour
         {
             foreach (Item item in items)
             {
-                sb.AppendLine("- " + item.itemName);
+                // Get the hex color for the item's rarity
+                string colorHex = GetRarityColorHex(item.rarity);
+                // Apply the color tag to the item name
+                sb.AppendLine($"<color={colorHex}>- {item.itemName}</color>");
             }
         }
-
+        
         playerInventoryText.text = sb.ToString();
     }
+
+    // --- ADD THIS NEW HELPER METHOD at the bottom of the class ---
+    private string GetRarityColorHex(Rarity rarity)
+    {
+        switch (rarity)
+        {
+            case Rarity.Common:
+                return "#B0B0B0"; // Grey
+            case Rarity.Uncommon:
+                return "#3DFF3D"; // Green
+            case Rarity.Rare:
+                return "#4D8CFF"; // Blue
+            case Rarity.Relic:
+                return "#C56BFF"; // Purple
+            case Rarity.Mythic:
+                return "#FF9A3D"; // Orange/Gold
+            default:
+                return "#FFFFFF"; // White
+        }
+    }
+
 
     public void UpdateStatusEffectsUI(List<StatusEffect> effects)
     {
