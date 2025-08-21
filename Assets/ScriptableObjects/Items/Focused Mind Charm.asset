@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9117e150efb5f0c4a8efe985c085ac7b, type: 3}
+  m_Name: Focused Mind Charm
+  m_EditorClassIdentifier: 
+  itemName: Focused Mind Charm
+  description: A small, polished stone that helps maintain focus, slightly increasing
+    your energy reserves.
+  icon: {fileID: 0}
+  bonuses:
+  - stat: 1
+    type: 1
+    value: 0.05

@@ -66,21 +66,55 @@ public class CombatUI : MonoBehaviour
 
     public void UpdatePlayerStats(Combatant combatant)
     {
-        var stats = combatant.Stats;
-        playerStatsText.text = $"EN: {combatant.currentEnergy} / {stats.Energy.Value}\n" +
-                                $"Might: {stats.Might.Value}\n" +
-                                $"Armor: {stats.Armor.Value}\n" +
-                                $"Speed: {stats.Speed.Value}";
+        playerStatsText.text = BuildStatsString(combatant);
     }
-
+    
     public void UpdateEnemyStats(Combatant combatant)
     {
-        var stats = combatant.Stats;
-        enemyStatsText.text = $"EN: {combatant.currentEnergy} / {stats.Energy.Value}\n" +
-                                $"Might: {stats.Might.Value}\n" +
-                                $"Armor: {stats.Armor.Value}\n" +
-                                $"Speed: {stats.Speed.Value}";
+        enemyStatsText.text = BuildStatsString(combatant);
     }
+
+    // --- ADD THIS NEW, POWERFUL HELPER METHOD ---
+    private string BuildStatsString(Combatant combatant)
+    {
+        StringBuilder sb = new StringBuilder();
+        var stats = combatant.Stats;
+
+        // A little local function to make formatting each line easy and consistent.
+        void AppendStatLine(string statName, Stat stat)
+        {
+            float finalValue = stat.Value;
+            float baseValue = stat.baseValue;
+            float bonus = finalValue - baseValue;
+
+            sb.Append(statName).Append(": ").Append(finalValue);
+            
+            // Only show the breakdown if there's a bonus (positive or negative)
+            if (bonus != 0)
+            {
+                // The "+0;-#" format string ensures a '+' sign for positive bonuses.
+                sb.Append(" (").Append(baseValue).Append(bonus.ToString(" +0;-#")).Append(")");
+            }
+            sb.AppendLine(); // Add a new line
+        }
+
+        // --- Now, we call the helper for every stat ---
+        AppendStatLine("Max HP", stats.MaxHealth);
+        AppendStatLine("Energy", stats.Energy);
+        AppendStatLine("EN Regen", stats.EnergyRegen);
+        sb.AppendLine("-----------------"); // Separator
+        AppendStatLine("Might", stats.Might);
+        AppendStatLine("Intelligence", stats.Intelligence);
+        AppendStatLine("Armor", stats.Armor);
+        AppendStatLine("Speed", stats.Speed);
+        AppendStatLine("Grit", stats.Grit);
+        sb.AppendLine("-----------------"); // Separator
+        AppendStatLine("Luck", stats.Luck);
+        AppendStatLine("Growth", stats.Growth);
+
+        return sb.ToString();
+    }
+
 
     public void CreatePlayerSkillButtons(Combatant player, CombatManager combatManager)
     {

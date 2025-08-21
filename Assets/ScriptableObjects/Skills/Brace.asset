@@ -26,5 +26,5 @@ MonoBehaviour:
   intelligenceRatio: 0
   appliesStatusEffect: 1
   effectToApply: 1
-  effectDuration: 2
+  effectDuration: 1
   effectClassification: 0
