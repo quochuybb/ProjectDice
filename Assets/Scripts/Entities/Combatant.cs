@@ -76,68 +76,48 @@ public class Combatant : MonoBehaviour
 
     public void UseSkill(Skill skill, Combatant target)
     {
-        // =================================================================
-        // 1. PRE-CHECKS: Verify if the skill can be used at all.
-        // =================================================================
-
-        // Check if the skill is on cooldown.
+        // --- 1. PRE-ACTION CHECKS ---
         if (IsSkillOnCooldown(skill))
         {
             Debug.Log($"<color=orange>Cannot use {skill.skillName}, it is on cooldown!</color>");
-            return; // Exit if on cooldown.
+            return;
         }
 
-        // Check for Empower buff to determine the real energy cost.
         bool isEmpowered = HasStatusEffect(StatusEffectType.Empower);
         int finalEnergyCost = isEmpowered ? 0 : skill.energyCost;
 
-        // Check if there is enough energy.
         if (currentEnergy < finalEnergyCost)
         {
             Debug.Log($"<color=orange>{characterSheet.name} does not have enough energy for {skill.skillName}!</color>");
-            return; // Exit if not enough energy.
+            return;
         }
-
-        // =================================================================
-        // 2. RESOURCE & COOLDOWN MANAGEMENT: Consume resources and apply cooldown.
-        // =================================================================
-
-        // Consume energy.
+        
+        // --- 2. CONSUME RESOURCES ---
         currentEnergy -= finalEnergyCost;
-        OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
-
-        // If Empower was used, consume the buff.
         if (isEmpowered)
         {
             Debug.Log($"<color=yellow>Empower consumed!</color>");
             RemoveStatusEffect(StatusEffectType.Empower);
         }
-
-        // Announce the action.
+        OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
         Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
-
-        // Put the skill on cooldown if it has one.
+        
+        // Put the skill on cooldown after it has been successfully used
         if (skill.cooldown > 0)
         {
             skillCooldowns[skill] = skill.cooldown;
             OnCooldownsChanged?.Invoke();
         }
 
-        // =================================================================
-        // 3. APPLY SKILL EFFECTS: Determine target and apply damage, healing, etc.
-        // =================================================================
-
-        // Determine who the skill's effects will apply to.
+        // --- 3. DETERMINE TARGET ---
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
 
-        // Handle the primary effect (Damage, Healing).
+        // --- 4. APPLY PRIMARY EFFECT (DAMAGE/HEAL) ---
         switch (skill.effectType)
         {
             case SkillEffectType.Damage:
-                // Start with a neutral damage multiplier.
                 float damageMultiplier = 1.0f;
 
-                // Check for Power Up buff on the caster.
                 if (HasStatusEffect(StatusEffectType.PowerUp))
                 {
                     damageMultiplier *= 1.5f;
@@ -145,7 +125,6 @@ public class Combatant : MonoBehaviour
                     RemoveStatusEffect(StatusEffectType.PowerUp);
                 }
 
-                // Check for Weaken debuff on the caster.
                 if (HasStatusEffect(StatusEffectType.Weaken))
                 {
                     damageMultiplier *= 0.5f;
@@ -153,33 +132,27 @@ public class Combatant : MonoBehaviour
                     RemoveStatusEffect(StatusEffectType.Weaken);
                 }
 
-                // Calculate damage after buffs/debuffs are factored in.
                 int baseSkillDamage = skill.baseDamage + (int)(Stats.Might.Value * skill.mightRatio);
                 int totalDamage = Mathf.RoundToInt(baseSkillDamage * damageMultiplier);
                 
-                Debug.Log($"Deals {totalDamage} damage to {effectTarget.characterSheet.name}.");
+                Debug.Log($"Deals {totalDamage} damage to {target.characterSheet.name}.");
                 effectTarget.TakeDamage(totalDamage);
                 break;
-
+                
             case SkillEffectType.Healing:
-                // Calculate total healing amount.
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
-                // 'this' always receives the heal since healing is targeted at 'Self'.
-                this.ReceiveHeal(totalHeal); 
+                this.ReceiveHeal(totalHeal);
                 break;
         }
 
-        // =================================================================
-        // 4. APPLY STATUS EFFECTS: Apply any secondary status effects from the skill.
-        // =================================================================
+        // --- 5. APPLY STATUS EFFECT (with the fix) ---
         if (skill.appliesStatusEffect)
         {
-            // Create the new status effect instance.
-            var newStatusEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification);
-            
-            // Apply the effect to the correct target, passing 'this' as the caster.
-            // The caster reference is needed to calculate DoT/HoT values based on the caster's stats.
-            effectTarget.ApplyStatusEffect(newStatusEffect, this);
+            effectTarget.ApplyStatusEffect(
+                new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification),
+                this, // The caster (this combatant)
+                skill // **THE FIX**: The source skill itself is passed directly
+            );
         }
     }
 
@@ -217,43 +190,51 @@ public class Combatant : MonoBehaviour
         return activeStatusEffects.Any(effect => effect.Type == type);
     }
 
-    public void ApplyStatusEffect(StatusEffect effect, Combatant caster)
+    public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourceSkill)
     {
-        // --- GRIT RESISTANCE LOGIC ---
+        // --- 1. GRIT RESISTANCE CHECK ---
         if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
         {
             float grit = Stats.Grit.Value;
-            // GDD Formula: Resist Chance % = (Grit / (Grit + 100)) * 50
-            float resistChance = (grit / (grit + 100f)) * 0.5f; // 0.5f represents 50%
+            float resistChance = (grit / (grit + 100f)) * 0.5f;
 
             if (Random.value < resistChance)
             {
                 Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
-                // IMPORTANT: Exit the method early so the effect is not applied.
                 return; 
             }
         }
 
-        // If not resisted, proceed to add the effect
+        // --- 2. DOT/HOT TICK VALUE CALCULATION (with the fix) ---
+        // We check if a sourceSkill was provided, as some effects (like Vulnerable from Freeze) won't have one.
+        if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration))
+        {
+            // **THE FIX**: Directly use the data from the passed-in sourceSkill. No more searching!
+            effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
+        }
+        
+        // --- 3. APPLY THE EFFECT ---
         activeStatusEffects.Add(effect);
         Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
         
-        // --- FREEZE'S VULNERABLE LOGIC ---
+        // --- 4. HANDLE SPECIAL CASE LOGIC ---
+        // If Freeze lands, also apply Vulnerable
         if (effect.Type == StatusEffectType.Freeze)
         {
-            // When Freeze is applied, also apply a 1-turn Vulnerable debuff.
-            // We call the method again recursively, but for a different effect.
             var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
-            // Note: The caster is still the original caster. We don't check for resistance on Vulnerable.
-            ApplyStatusEffect(vulnerableDebuff, caster); 
+            // We pass 'null' for the skill because Vulnerable isn't a DoT/HoT.
+            ApplyStatusEffect(vulnerableDebuff, caster, null); 
         }
         
+        // If Fortify lands, apply the stat modifier
         if (effect.Type == StatusEffectType.Fortify)
         {
+            // The StatusEffect object itself is the source, allowing clean removal.
             StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
             Stats.Armor.AddModifier(armorBuff);
         }
         
+        // --- 5. NOTIFY UI ---
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
     }
 
