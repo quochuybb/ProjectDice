@@ -28,20 +28,22 @@ public class CombatManager : MonoBehaviour
 
         // --- SUBSCRIBE TO EVENTS ---
         playerCombatant.OnHealthChanged += combatUI.UpdatePlayerHealth;
-        playerCombatant.OnEnergyChanged += (current, max) => {
+        playerCombatant.OnEnergyChanged += (current, max) =>
+        {
             combatUI.UpdatePlayerStats(playerCombatant);
             combatUI.UpdateSkillButtons(playerCombatant); // Also update buttons on energy change
         };
         playerCombatant.GetComponent<InventoryComponent>().OnInventoryChanged += combatUI.UpdateInventoryUI;
-        
+
         // --- THIS IS THE KEY CHANGE ---
         // When status effects change, update BOTH the status display AND the skill buttons
-        playerCombatant.OnStatusEffectsChanged += (effects) => {
+        playerCombatant.OnStatusEffectsChanged += (effects) =>
+        {
             combatUI.UpdateStatusEffectsUI(effects);
             combatUI.UpdateSkillButtons(playerCombatant);
         };
         // --- END OF KEY CHANGE ---
-        
+
         playerCombatant.OnCooldownsChanged += () => combatUI.UpdateSkillButtons(playerCombatant);
 
         enemyCombatant.OnHealthChanged += combatUI.UpdateEnemyHealth;
@@ -55,16 +57,17 @@ public class CombatManager : MonoBehaviour
     IEnumerator PlayerTurn()
     {
         playerCombatant.TickDownDebuffsAtTurnStart();
-        
-        // --- ADD COOLDOWN TICKDOWN ---
         playerCombatant.TickDownCooldowns(); 
-
         playerCombatant.RegenerateEnergy();
         yield return new WaitForSeconds(0.5f);
+
         Debug.Log("Player's Turn. Select an action.");
+        
+        // --- ENABLE BUTTONS AT THE END OF SETUP ---
+        combatUI.EnablePlayerActions();
     }
 
-    
+
     public void OnPlayerSkillSelection(Skill skill)
     {
         if (state != CombatState.PLAYERTURN)
@@ -72,13 +75,15 @@ public class CombatManager : MonoBehaviour
 
         StartCoroutine(PlayerAttack(skill));
     }
-    
+
     IEnumerator PlayerAttack(Skill skill)
     {
+        // --- DISABLE BUTTONS AT THE START OF ACTION ---
+        combatUI.DisablePlayerActions();
+
         playerCombatant.UseSkill(skill, enemyCombatant);
         yield return new WaitForSeconds(1.5f);
         
-        // --- NEW LOGIC: TICK BUFFS AT END OF ACTION ---
         playerCombatant.TickDownBuffsAtTurnEnd();
         yield return new WaitForSeconds(0.5f);
 
@@ -93,7 +98,7 @@ public class CombatManager : MonoBehaviour
             StartCoroutine(EnemyTurn());
         }
     }
-    
+
     // --- THIS METHOD IS COMPLETELY REWRITTEN FOR AI ---
     IEnumerator EnemyTurn()
     {
@@ -102,9 +107,9 @@ public class CombatManager : MonoBehaviour
         enemyCombatant.TickDownDebuffsAtTurnStart();
         enemyCombatant.RegenerateEnergy();
         yield return new WaitForSeconds(1f);
-        
+
         // --- AI LOGIC START ---
-        
+
         // 1. Get a list of all skills the enemy *can afford* to use.
         var allSkills = enemyCombatant.characterSheet.startingSkills;
         var affordableSkills = new List<Skill>();
@@ -135,7 +140,7 @@ public class CombatManager : MonoBehaviour
         // --- AI LOGIC END ---
 
         yield return new WaitForSeconds(1.5f);
-        
+
         // --- NEW LOGIC: TICK BUFFS AT END OF ACTION ---
         enemyCombatant.TickDownBuffsAtTurnEnd();
         yield return new WaitForSeconds(0.5f);
@@ -154,7 +159,7 @@ public class CombatManager : MonoBehaviour
 
     void EndCombat()
     {
-        if(state == CombatState.WON)
+        if (state == CombatState.WON)
         {
             Debug.Log("<color=green>You Won!</color>");
         }
@@ -163,4 +168,29 @@ public class CombatManager : MonoBehaviour
             Debug.Log("<color=red>You Lost.</color>");
         }
     }
+    
+    public void OnSkipTurnClicked()
+    {
+        if (state != CombatState.PLAYERTURN)
+            return;
+
+        StartCoroutine(SkipTurn());
+    }
+
+    // A new coroutine to handle the turn transition
+    private IEnumerator SkipTurn()
+    {
+        // First, disable all player actions to prevent double-clicks
+        combatUI.DisablePlayerActions();
+
+        Debug.Log("Player skips their turn.");
+        
+        // We still need to tick down buffs at the end of the turn
+        playerCombatant.TickDownBuffsAtTurnEnd();
+        yield return new WaitForSeconds(0f);
+
+        state = CombatState.ENEMYTURN;
+        StartCoroutine(EnemyTurn());
+    }
+
 }

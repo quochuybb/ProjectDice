@@ -20,13 +20,14 @@ public class CombatUI : MonoBehaviour
     [Header("Skill Bar")]
     [SerializeField] private Transform skillButtonContainer;
     [SerializeField] private GameObject skillButtonPrefab;
-    
+    [SerializeField] private Button skipTurnButton;
+
     // --- NEW LIST TO HOLD OUR BUTTONS ---
     private List<SkillButtonUI> skillButtons = new List<SkillButtonUI>();
 
     [Header("Status Effects")]
     [SerializeField] private TMP_Text playerStatusText;
-
+    private Combatant playerCombatantRef;
     private class SkillButtonUI
     {
         public Skill associatedSkill;
@@ -37,6 +38,7 @@ public class CombatUI : MonoBehaviour
 
     public void SetupPlayerUI(Combatant combatant)
     {
+        playerCombatantRef = combatant;
         playerNameText.text = combatant.characterSheet.name;
         UpdatePlayerHealth(combatant.currentHealth, (int)combatant.Stats.MaxHealth.Value);
         UpdatePlayerStats(combatant);
@@ -93,7 +95,7 @@ public class CombatUI : MonoBehaviour
         foreach (Skill skill in player.characterSheet.startingSkills)
         {
             GameObject buttonGO = Instantiate(skillButtonPrefab, skillButtonContainer);
-            
+
             // Create a new SkillButtonUI instance and populate it
             SkillButtonUI newButtonUI = new SkillButtonUI
             {
@@ -104,7 +106,7 @@ public class CombatUI : MonoBehaviour
 
             // Add the listener
             newButtonUI.button.onClick.AddListener(() => combatManager.OnPlayerSkillSelection(skill));
-            
+
             // Add the new button object to our list
             skillButtons.Add(newButtonUI);
         }
@@ -162,9 +164,9 @@ public class CombatUI : MonoBehaviour
         playerInventoryText.text = sb.ToString();
     }
 
-        public void UpdateStatusEffectsUI(List<StatusEffect> effects)
+    public void UpdateStatusEffectsUI(List<StatusEffect> effects)
     {
-        if(effects == null || effects.Count == 0)
+        if (effects == null || effects.Count == 0)
         {
             playerStatusText.text = "";
             return;
@@ -172,10 +174,27 @@ public class CombatUI : MonoBehaviour
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("<b>Effects:</b>");
-        foreach(var effect in effects)
+        foreach (var effect in effects)
         {
             sb.AppendLine($"- {effect.Type} ({effect.Duration})");
         }
         playerStatusText.text = sb.ToString();
+    }
+
+    public void EnablePlayerActions()
+    {
+        // This method already handles cooldowns and energy, so we just call it.
+        UpdateSkillButtons(playerCombatantRef); 
+        skipTurnButton.interactable = true;
+    }
+
+    // --- NEW METHOD TO DISABLE ACTIONS ---
+    public void DisablePlayerActions()
+    {
+        foreach (var sb in skillButtons)
+        {
+            sb.button.interactable = false;
+        }
+        skipTurnButton.interactable = false;
     }
 }
