@@ -219,21 +219,34 @@ public class Combatant : MonoBehaviour
 
     public void ApplyStatusEffect(StatusEffect effect, Combatant caster)
     {
-        // --- CALCULATE AND STORE THE TICK VALUE ---
-        if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration)
+        // --- GRIT RESISTANCE LOGIC ---
+        if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
         {
-            // We need the skill that applied this, but we can assume for now that only one skill applies one effect type
-            // A more robust system might pass the skill itself, but this works for now.
-            // Let's find the skill from the caster's sheet that applies this effect.
-            Skill sourceSkill = caster.characterSheet.startingSkills.FirstOrDefault(s => s.effectToApply == effect.Type);
-            if (sourceSkill != null)
+            float grit = Stats.Grit.Value;
+            // GDD Formula: Resist Chance % = (Grit / (Grit + 100)) * 50
+            float resistChance = (grit / (grit + 100f)) * 0.5f; // 0.5f represents 50%
+
+            if (Random.value < resistChance)
             {
-                effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
+                Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
+                // IMPORTANT: Exit the method early so the effect is not applied.
+                return; 
             }
         }
-        
+
+        // If not resisted, proceed to add the effect
         activeStatusEffects.Add(effect);
         Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
+        
+        // --- FREEZE'S VULNERABLE LOGIC ---
+        if (effect.Type == StatusEffectType.Freeze)
+        {
+            // When Freeze is applied, also apply a 1-turn Vulnerable debuff.
+            // We call the method again recursively, but for a different effect.
+            var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
+            // Note: The caster is still the original caster. We don't check for resistance on Vulnerable.
+            ApplyStatusEffect(vulnerableDebuff, caster); 
+        }
         
         if (effect.Type == StatusEffectType.Fortify)
         {

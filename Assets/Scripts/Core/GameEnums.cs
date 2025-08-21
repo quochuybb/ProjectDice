@@ -50,7 +50,10 @@ public enum StatusEffectType
     Regeneration,
     PowerUp,
     Vulnerable,
-    Weaken
+    Weaken,
+    // --- ADD THESE ---
+    Stun,
+    Freeze
 }
 
 public enum EffectClassification
