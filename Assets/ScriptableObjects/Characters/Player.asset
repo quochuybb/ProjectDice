@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Player
   characterSprite: {fileID: 7315897641784372060, guid: e7d77189b669c43d38934a3cce5e05b5, type: 3}
-  maxHealth: 1000
-  energy: 100
+  maxHealth: 100
+  energy: 30
   energyRegen: 10
   might: 10
   intelligence: 10

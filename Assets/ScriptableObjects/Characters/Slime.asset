@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Slime
   characterSprite: {fileID: 2326333024471168493, guid: 97ba893235bb5b663a32f7b7be751304, type: 3}
-  maxHealth: 1000
+  maxHealth: 60
   energy: 20
   energyRegen: 10
   might: 10

@@ -77,13 +77,13 @@ public class CombatUI : MonoBehaviour
         enemyStatsText.text = BuildStatsString(combatant);
     }
 
-    // --- ADD THIS NEW, POWERFUL HELPER METHOD ---
     private string BuildStatsString(Combatant combatant)
     {
         StringBuilder sb = new StringBuilder();
         var stats = combatant.Stats;
 
-        // A little local function to make formatting each line easy and consistent.
+        // A local helper function to format each stat line consistently.
+        // It neatly handles displaying the base value and the calculated bonus.
         void AppendStatLine(string statName, Stat stat)
         {
             float finalValue = stat.Value;
@@ -98,20 +98,36 @@ public class CombatUI : MonoBehaviour
                 // The "+0;-#" format string ensures a '+' sign for positive bonuses.
                 sb.Append(" (").Append(baseValue).Append(bonus.ToString(" +0;-#")).Append(")");
             }
-            sb.AppendLine(); // Add a new line
+            sb.AppendLine(); // Add a new line at the end
         }
 
-        // --- Now, we call the helper for every stat ---
-        AppendStatLine("Max HP", stats.MaxHealth);
-        AppendStatLine("Energy", stats.Energy);
+        // --- Section 1: Resource Pools (Current / Max) ---
+        // Health is handled by the dedicated Health Text, but we can show Max HP here.
+        AppendStatLine("Max Health", stats.MaxHealth);
+        
+        // Energy is handled specially to show the current value from the Combatant.
+        sb.Append("Energy: ").Append(combatant.currentEnergy).Append(" / ").Append(stats.Energy.Value);
+        float energyBonus = stats.Energy.Value - stats.Energy.baseValue;
+        if (energyBonus != 0)
+        {
+            sb.Append(" (").Append(stats.Energy.baseValue).Append(energyBonus.ToString(" +0;-#")).Append(")");
+        }
+        sb.AppendLine();
+        
         AppendStatLine("EN Regen", stats.EnergyRegen);
+        
         sb.AppendLine("-----------------"); // Separator
+
+        // --- Section 2: Core Combat Stats ---
         AppendStatLine("Might", stats.Might);
         AppendStatLine("Intelligence", stats.Intelligence);
         AppendStatLine("Armor", stats.Armor);
         AppendStatLine("Speed", stats.Speed);
         AppendStatLine("Grit", stats.Grit);
+        
         sb.AppendLine("-----------------"); // Separator
+
+        // --- Section 3: Board / Utility Stats ---
         AppendStatLine("Luck", stats.Luck);
         AppendStatLine("Growth", stats.Growth);
 
@@ -181,7 +197,7 @@ public class CombatUI : MonoBehaviour
         }
     }
 
-    public void UpdateInventoryUI(List<Item> items)
+    public void UpdateInventoryUI(Dictionary<Item, int> items)
     {
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("<b>Items:</b>");
@@ -192,12 +208,17 @@ public class CombatUI : MonoBehaviour
         }
         else
         {
-            foreach (Item item in items)
+            // --- NEW LOGIC to iterate through the dictionary ---
+            foreach (KeyValuePair<Item, int> entry in items)
             {
-                // Get the hex color for the item's rarity
+                Item item = entry.Key;
+                int count = entry.Value;
+                
                 string colorHex = GetRarityColorHex(item.rarity);
-                // Apply the color tag to the item name
-                sb.AppendLine($"<color={colorHex}>- {item.itemName}</color>");
+                // Display the stack count if it's greater than 1
+                string stackText = (count > 1) ? $" x{count}" : "";
+                
+                sb.AppendLine($"<color={colorHex}>- {item.itemName}{stackText}</color>");
             }
         }
         

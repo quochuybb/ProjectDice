@@ -46,8 +46,9 @@ public class CombatManager : MonoBehaviour
         // When the player's inventory changes (e.g., equipping an item):
         // - Update the inventory list in the UI.
         // - Update the stats panel, as items directly modify stats.
-        playerCombatant.GetComponent<InventoryComponent>().OnInventoryChanged += (items) => {
-            combatUI.UpdateInventoryUI(items);
+        playerCombatant.GetComponent<InventoryComponent>().OnInventoryChanged += (itemDict) =>
+        {
+            combatUI.UpdateInventoryUI(itemDict);
             combatUI.UpdatePlayerStats(playerCombatant);
         };
         
