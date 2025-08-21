@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Hardened Resolve
   description: An iron talisman that instills an unwavering sense of determination.
   icon: {fileID: 0}
+  rarity: 1
   bonuses:
   - stat: 7
     type: 0

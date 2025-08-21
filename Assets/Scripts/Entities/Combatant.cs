@@ -19,7 +19,7 @@ public class Combatant : MonoBehaviour
     public List<StatusEffect> activeStatusEffects = new List<StatusEffect>();
     public UnityAction<List<StatusEffect>> OnStatusEffectsChanged;
 
-        public Dictionary<Skill, int> skillCooldowns = new Dictionary<Skill, int>();
+    public Dictionary<Skill, int> skillCooldowns = new Dictionary<Skill, int>();
     public UnityAction OnCooldownsChanged;
 
     void Awake()
@@ -69,13 +69,17 @@ public class Combatant : MonoBehaviour
 
     public void UseSkill(Skill skill, Combatant target)
     {
-        // Add a check to prevent using a skill on cooldown (backend safety)
+        // --- Phase 1: Pre-checks (Guard Clauses) ---
+        // These checks will exit the method early if the skill cannot be used.
+
+        // Check 1: Is the skill on cooldown?
         if (IsSkillOnCooldown(skill))
         {
             Debug.Log($"<color=orange>Cannot use {skill.skillName}, it is on cooldown!</color>");
             return;
         }
 
+        // Check 2: Does the combatant have enough energy? (Factoring in Empower)
         bool isEmpowered = HasStatusEffect(StatusEffectType.Empower);
         int finalEnergyCost = isEmpowered ? 0 : skill.energyCost;
 
@@ -85,54 +89,68 @@ public class Combatant : MonoBehaviour
             return;
         }
 
-        // --- All checks passed, proceed to use the skill ---
-        
+
+        // --- Phase 2: Commit to Action (Pay the Costs) ---
+        // If we reach this point, the skill will definitely be used.
+
+        // Pay the energy cost and consume Empower if it was used.
         currentEnergy -= finalEnergyCost;
         if (isEmpowered)
         {
             Debug.Log($"<color=yellow>Empower consumed!</color>");
             RemoveStatusEffect(StatusEffectType.Empower);
         }
+        // Notify the UI that energy has changed.
         OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
-        Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
-        
-        // --- PUT THE SKILL ON COOLDOWN ---
+
+        // Put the skill on cooldown if it has one.
         if (skill.cooldown > 0)
         {
-            skillCooldowns[skill] = skill.cooldown + 1;
-            OnCooldownsChanged?.Invoke(); // Notify UI that cooldowns have changed
+            skillCooldowns[skill] = skill.cooldown;
+            // Notify the UI that cooldowns have changed.
+            OnCooldownsChanged?.Invoke();
         }
 
-        // Determine the target for effects
+
+        // --- Phase 3: Apply the Effects ---
+
+        Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
+
+        // Determine the correct target for the skill's effects.
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
 
-        // Apply skill's primary effect (Damage/Heal)
+        // Apply the skill's primary effect (Damage or Healing).
         switch (skill.effectType)
         {
             case SkillEffectType.Damage:
                 int totalDamage = skill.baseDamage + (int)(Stats.Might.Value * skill.mightRatio);
                 effectTarget.TakeDamage(totalDamage);
                 break;
+
             case SkillEffectType.Healing:
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
                 effectTarget.ReceiveHeal(totalHeal);
                 break;
         }
 
-        // Apply skill's status effect, if any
+        // Apply the skill's status effect, if it has one.
         if (skill.appliesStatusEffect)
         {
-            // --- PASS THE NEW PARAMETER ---
-            effectTarget.ApplyStatusEffect(new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification));
+            // Create the new status effect object.
+            var newEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification);
+
+            // Apply the effect to the target, passing 'this' (the current Combatant) as the caster.
+            // This is crucial for calculating DoT/HoT damage based on the caster's stats.
+            effectTarget.ApplyStatusEffect(newEffect, this);
         }
     }
 
-        // --- NEW HELPER & TICKDOWN METHODS ---
+    // --- NEW HELPER & TICKDOWN METHODS ---
     public bool IsSkillOnCooldown(Skill skill)
     {
         return skillCooldowns.ContainsKey(skill);
     }
-    
+
     public void TickDownCooldowns()
     {
         if (skillCooldowns.Count == 0) return;
@@ -152,7 +170,7 @@ public class Combatant : MonoBehaviour
             changed = true;
         }
 
-        if(changed) OnCooldownsChanged?.Invoke();
+        if (changed) OnCooldownsChanged?.Invoke();
     }
 
     // --- NEW METHODS FOR STATUS EFFECT MANAGEMENT ---
@@ -161,9 +179,21 @@ public class Combatant : MonoBehaviour
         return activeStatusEffects.Any(effect => effect.Type == type);
     }
 
-    public void ApplyStatusEffect(StatusEffect effect)
+    public void ApplyStatusEffect(StatusEffect effect, Combatant caster)
     {
-        // The rest of this method is the same, just the signature changed
+        // --- CALCULATE AND STORE THE TICK VALUE ---
+        if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration)
+        {
+            // We need the skill that applied this, but we can assume for now that only one skill applies one effect type
+            // A more robust system might pass the skill itself, but this works for now.
+            // Let's find the skill from the caster's sheet that applies this effect.
+            Skill sourceSkill = caster.characterSheet.startingSkills.FirstOrDefault(s => s.effectToApply == effect.Type);
+            if (sourceSkill != null)
+            {
+                effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
+            }
+        }
+        
         activeStatusEffects.Add(effect);
         Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
         
@@ -175,7 +205,7 @@ public class Combatant : MonoBehaviour
         
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
     }
-    
+
     public void RemoveStatusEffect(StatusEffectType type)
     {
         StatusEffect effectToRemove = activeStatusEffects.FirstOrDefault(e => e.Type == type);
@@ -186,7 +216,7 @@ public class Combatant : MonoBehaviour
             {
                 Stats.Armor.RemoveAllModifiersFromSource(effectToRemove);
             }
-            
+
             activeStatusEffects.Remove(effectToRemove);
             OnStatusEffectsChanged?.Invoke(activeStatusEffects);
         }
@@ -246,7 +276,7 @@ public class Combatant : MonoBehaviour
         Debug.Log($"<color=red>{characterSheet.name} has been defeated!</color>");
         gameObject.SetActive(false);
     }
-    
+
     public void ReceiveHeal(int healAmount)
     {
         currentHealth += healAmount;
@@ -255,5 +285,26 @@ public class Combatant : MonoBehaviour
 
         OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
         Debug.Log($"<color=green>{characterSheet.name} is healed for {healAmount}. New HP: {currentHealth}.</color>");
+    }
+    
+    public void ProcessDoTsAndHoTs()
+    {
+        // Create a copy to avoid issues if an effect is removed during processing
+        var effectsToProcess = activeStatusEffects.ToList();
+
+        foreach (var effect in effectsToProcess)
+        {
+            switch (effect.Type)
+            {
+                case StatusEffectType.Burn:
+                    Debug.Log($"{characterSheet.name} is burned!");
+                    TakeDamage(effect.TickValue);
+                    break;
+                case StatusEffectType.Regeneration:
+                    Debug.Log($"{characterSheet.name} regenerates health!");
+                    ReceiveHeal(effect.TickValue);
+                    break;
+            }
+        }
     }
 }

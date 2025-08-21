@@ -46,8 +46,11 @@ public enum StatusEffectType
     None,
     Fortify,
     Empower,
-    PowerUp, // Future
-    Weaken   // Future
+    Burn,
+    Regeneration,
+    // ---
+    PowerUp,
+    Weaken
 }
 
 public enum EffectClassification

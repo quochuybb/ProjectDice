@@ -41,5 +41,12 @@ public class Skill : ScriptableObject
     [Tooltip("Classification for the tickdown system")]
     public EffectClassification effectClassification;
     
+    [Header("DoT / HoT Effect")]
+    [Tooltip("Base damage/healing per turn for DoT/HoT effects.")]
+    public int baseDotHotValue;
+    [Tooltip("How much the DoT/HoT scales with the caster's Intelligence.")]
+    public float dotHotIntelligenceRatio;
+
+
     
 }

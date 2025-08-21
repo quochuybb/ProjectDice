@@ -67,7 +67,7 @@ public class CombatManager : MonoBehaviour
         // --- Enemy Event Subscriptions (simpler for now) ---
         enemyCombatant.OnHealthChanged += combatUI.UpdateEnemyHealth;
         enemyCombatant.OnEnergyChanged += (current, max) => combatUI.UpdateEnemyStats(enemyCombatant);
-
+        enemyCombatant.OnStatusEffectsChanged += combatUI.UpdateEnemyStatusEffectsUI;
 
         // --- 3. START THE BATTLE ---
         // Wait a moment for the player to process the initial screen state.
@@ -80,14 +80,14 @@ public class CombatManager : MonoBehaviour
 
     IEnumerator PlayerTurn()
     {
+        // --- PROCESS DOTS/HOTS FIRST ---
+        playerCombatant.ProcessDoTsAndHoTs();
+        
         playerCombatant.TickDownDebuffsAtTurnStart();
         playerCombatant.TickDownCooldowns(); 
         playerCombatant.RegenerateEnergy();
         yield return new WaitForSeconds(0.5f);
-
         Debug.Log("Player's Turn. Select an action.");
-        
-        // --- ENABLE BUTTONS AT THE END OF SETUP ---
         combatUI.EnablePlayerActions();
     }
 
@@ -128,6 +128,7 @@ public class CombatManager : MonoBehaviour
     {
 
         Debug.Log("Enemy's Turn.");
+        enemyCombatant.ProcessDoTsAndHoTs();
         enemyCombatant.TickDownDebuffsAtTurnStart();
         enemyCombatant.RegenerateEnergy();
         yield return new WaitForSeconds(1f);

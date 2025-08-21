@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Elixir of Vigor
   description: A flask containing a shimmering, life-giving liquid.
   icon: {fileID: 0}
+  rarity: 1
   bonuses:
   - stat: 0
     type: 1

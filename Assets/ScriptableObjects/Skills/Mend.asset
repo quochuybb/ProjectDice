@@ -10,23 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
-  m_Name: First Aid
+  m_Name: Mend
   m_EditorClassIdentifier: 
-  skillName: First Aid
+  skillName: Mend
   description: 
   rarity: 0
-  element: 0
-  energyCost: 20
+  element: 5
+  energyCost: 15
   cooldown: 2
   effectType: 1
   targetType: 1
   baseDamage: 0
   mightRatio: 0
-  baseHeal: 10
-  intelligenceRatio: 1
-  appliesStatusEffect: 0
-  effectToApply: 0
-  effectDuration: 0
+  baseHeal: 0
+  intelligenceRatio: 0
+  appliesStatusEffect: 1
+  effectToApply: 4
+  effectDuration: 2
   effectClassification: 0
-  baseDotHotValue: 0
-  dotHotIntelligenceRatio: 0
+  baseDotHotValue: 7
+  dotHotIntelligenceRatio: 0.5

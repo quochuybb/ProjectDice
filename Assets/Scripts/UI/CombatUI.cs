@@ -16,6 +16,7 @@ public class CombatUI : MonoBehaviour
     [SerializeField] private TMP_Text enemyNameText;
     [SerializeField] private TMP_Text enemyHealthText;
     [SerializeField] private TMP_Text enemyStatsText;
+    [SerializeField] private TMP_Text enemyStatusText;
 
     [Header("Skill Bar")]
     [SerializeField] private Transform skillButtonContainer;
@@ -51,6 +52,8 @@ public class CombatUI : MonoBehaviour
         enemyNameText.text = combatant.characterSheet.name;
         UpdateEnemyHealth(combatant.currentHealth, (int)combatant.Stats.MaxHealth.Value);
         UpdateEnemyStats(combatant);
+        // --- ADD THIS LINE to clear the status on startup ---
+        UpdateEnemyStatusEffectsUI(combatant.activeStatusEffects);
     }
     // ------------------------------------
 
@@ -232,17 +235,50 @@ public class CombatUI : MonoBehaviour
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("<b>Effects:</b>");
-        foreach (var effect in effects)
+        foreach(var effect in effects)
         {
-            sb.AppendLine($"- {effect.Type} ({effect.Duration})");
+            // --- NEW LOGIC TO SHOW TICK VALUE ---
+            if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration)
+            {
+                sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
+            }
+            else
+            {
+                sb.AppendLine($"- {effect.Type} ({effect.Duration})");
+            }
         }
         playerStatusText.text = sb.ToString();
+    }
+    
+    public void UpdateEnemyStatusEffectsUI(List<StatusEffect> effects)
+    {
+        if (effects == null || effects.Count == 0)
+        {
+            enemyStatusText.text = "";
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        // You can optionally add a title like this
+        // sb.AppendLine("<b>Effects:</b>"); 
+        foreach(var effect in effects)
+        {
+            if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration)
+            {
+                sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
+            }
+            else
+            {
+                sb.AppendLine($"- {effect.Type} ({effect.Duration})");
+            }
+        }
+        enemyStatusText.text = sb.ToString();
     }
 
     public void EnablePlayerActions()
     {
         // This method already handles cooldowns and energy, so we just call it.
-        UpdateSkillButtons(playerCombatantRef); 
+        UpdateSkillButtons(playerCombatantRef);
         skipTurnButton.interactable = true;
     }
 

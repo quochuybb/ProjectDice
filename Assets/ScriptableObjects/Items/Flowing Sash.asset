@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Flowing Sash
   description: 'A silk sash that seems to guide the flow of energy into your body. '
   icon: {fileID: 0}
+  rarity: 1
   bonuses:
   - stat: 2
     type: 0
