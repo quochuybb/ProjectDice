@@ -192,49 +192,61 @@ public class Combatant : MonoBehaviour
 
     public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourceSkill)
     {
-        // --- 1. GRIT RESISTANCE CHECK ---
+        // --- 1. PRE-APPLICATION CHECKS (Gatekeeping) ---
+        // Check for Grit resistance against Stun and Freeze.
         if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
         {
             float grit = Stats.Grit.Value;
+            // GDD Formula: Resist Chance % = (Grit / (Grit + 100)) * 50
             float resistChance = (grit / (grit + 100f)) * 0.5f;
 
             if (Random.value < resistChance)
             {
                 Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
-                return; 
+                return; // Exit the method immediately; the effect is not applied.
             }
         }
 
-        // --- 2. DOT/HOT TICK VALUE CALCULATION (with the fix) ---
-        // We check if a sourceSkill was provided, as some effects (like Vulnerable from Freeze) won't have one.
+        // --- 2. VALUE CALCULATION ---
+        // Calculate and store the tick value for DoTs and HoTs.
         if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration))
         {
-            // **THE FIX**: Directly use the data from the passed-in sourceSkill. No more searching!
+            // Use the passed-in skill and caster's stats to determine the power per tick.
             effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
         }
         
-        // --- 3. APPLY THE EFFECT ---
+        // --- 3. ADD EFFECT TO LIST ---
         activeStatusEffects.Add(effect);
+
+        // --- 4. POST-APPLICATION LOGIC (Special Cases) ---
+
+        // FIX: Stun and Freeze must have their 'newly applied' flag disabled immediately
+        // so they correctly expire after one turn.
+        if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
+        {
+            effect.IsNewlyApplied = false;
+        }
+        
         Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
         
-        // --- 4. HANDLE SPECIAL CASE LOGIC ---
-        // If Freeze lands, also apply Vulnerable
+        // Freeze also applies a 1-turn Vulnerable debuff.
         if (effect.Type == StatusEffectType.Freeze)
         {
             var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
-            // We pass 'null' for the skill because Vulnerable isn't a DoT/HoT.
+            // We call this method again recursively. The sourceSkill is null as this is a secondary effect.
             ApplyStatusEffect(vulnerableDebuff, caster, null); 
         }
         
-        // If Fortify lands, apply the stat modifier
+        // Fortify applies a temporary flat armor bonus.
         if (effect.Type == StatusEffectType.Fortify)
         {
-            // The StatusEffect object itself is the source, allowing clean removal.
+            // The StatusEffect object itself is the 'source' of the modifier, making it easy to remove when it expires.
             StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
             Stats.Armor.AddModifier(armorBuff);
         }
         
         // --- 5. NOTIFY UI ---
+        // Fire the event to let the UI know that it needs to update.
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
     }
 
