@@ -741,8 +741,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -99.99994, y: -340}
-  m_SizeDelta: {x: 1720, y: 400}
+  m_AnchoredPosition: {x: -85, y: -340}
+  m_SizeDelta: {x: 1690, y: 400}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &931110553
 MonoBehaviour:
@@ -765,7 +765,7 @@ MonoBehaviour:
   m_StartCorner: 0
   m_StartAxis: 0
   m_CellSize: {x: 200, y: 100}
-  m_Spacing: {x: 50, y: 50}
+  m_Spacing: {x: 10, y: 10}
   m_Constraint: 0
   m_ConstraintCount: 2
 --- !u!1 &932469641
@@ -1459,7 +1459,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 747b3d154de23bd45a187e186f2f80b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  equippedItems: []
   startingItems:
   - {fileID: 11400000, guid: b7685d6b89120064d88c3f468e8de8a8, type: 2}
   - {fileID: 11400000, guid: df12837e5a1edda47be11526239d023b, type: 2}
@@ -1716,7 +1715,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 747b3d154de23bd45a187e186f2f80b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  equippedItems: []
   startingItems: []
 --- !u!1 &1738423377
 GameObject:

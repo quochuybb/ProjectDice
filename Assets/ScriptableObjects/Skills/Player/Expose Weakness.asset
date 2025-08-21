@@ -20,8 +20,8 @@ MonoBehaviour:
   cooldown: 2
   effectType: 0
   targetType: 0
-  baseDamage: 20
-  mightRatio: 1
+  baseDamage: 10
+  mightRatio: 0.5
   baseHeal: 0
   intelligenceRatio: 0
   appliesStatusEffect: 1

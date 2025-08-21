@@ -98,8 +98,12 @@ public class CombatManager : MonoBehaviour
 
     public void OnPlayerSkillSelection(Skill skill)
     {
+        // The state check remains the first line of defense.
         if (state != CombatState.PLAYERTURN)
             return;
+
+        // --- THE FIX: Change the state IMMEDIATELY ---
+        state = CombatState.ENEMYTURN; // Or a new state like CombatState.PROCESSING_ACTION;
 
         StartCoroutine(PlayerAttack(skill));
     }
@@ -108,11 +112,9 @@ public class CombatManager : MonoBehaviour
     {
         combatUI.DisablePlayerActions();
 
-        // Player takes their action here...
         playerCombatant.UseSkill(skill, enemyCombatant);
         yield return new WaitForSeconds(1.5f);
         
-        // --- TICK DOWN ALL EFFECTS AT THE END OF THE TURN ---
         playerCombatant.TickDownStatusEffectsAtTurnEnd();
         yield return new WaitForSeconds(0.5f);
 
@@ -123,7 +125,7 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            state = CombatState.ENEMYTURN;
+            // The state is already ENEMYTURN, so we just start the coroutine.
             StartCoroutine(EnemyTurn());
         }
     }
@@ -145,7 +147,7 @@ public class CombatManager : MonoBehaviour
         enemyCombatant.RegenerateEnergy();
         
         // A delay to pace the turn.
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.5f);
 
         // ===================================
         // 2. ACTION PHASE (AI LOGIC)
@@ -156,6 +158,7 @@ public class CombatManager : MonoBehaviour
         var affordableSkills = new List<Skill>();
         foreach (var skill in allSkills)
         {
+            // The AI now correctly checks for both energy and cooldowns.
             if (skill.energyCost <= enemyCombatant.currentEnergy && !enemyCombatant.IsSkillOnCooldown(skill))
             {
                 affordableSkills.Add(skill);
@@ -179,7 +182,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // A delay for the action/animation to play out.
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(0.5f);
 
         // ===================================
         // 3. END OF TURN PHASE
@@ -203,7 +206,8 @@ public class CombatManager : MonoBehaviour
         }
         else
         {
-            // If the player is still alive, transition back to the player's turn.
+            // CRITICAL FIX: The state is set back to PLAYERTURN here,
+            // allowing the player to take their next action and preventing input bugs.
             state = CombatState.PLAYERTURN;
             StartCoroutine(PlayerTurn());
         }
@@ -225,21 +229,22 @@ public class CombatManager : MonoBehaviour
     {
         if (state != CombatState.PLAYERTURN)
             return;
+        
+        // --- THE FIX: Change the state IMMEDIATELY ---
+        state = CombatState.ENEMYTURN;
 
         StartCoroutine(SkipTurn());
     }
 
-    // A new coroutine to handle the turn transition
     private IEnumerator SkipTurn()
     {
         combatUI.DisablePlayerActions();
         Debug.Log("Player skips their turn.");
         
-        // --- TICK DOWN ALL EFFECTS AT THE END OF THE TURN ---
         playerCombatant.TickDownStatusEffectsAtTurnEnd();
         yield return new WaitForSeconds(0.5f);
 
-        state = CombatState.ENEMYTURN;
+        // The state is already ENEMYTURN, so we just start the coroutine.
         StartCoroutine(EnemyTurn());
     }
 
