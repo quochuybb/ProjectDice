@@ -53,7 +53,9 @@ public enum StatusEffectType
     Weaken,
     Stun,
     Freeze,
-    Poison
+    Poison,
+    MortalWound,
+    Blight
 }
 
 public enum EffectClassification

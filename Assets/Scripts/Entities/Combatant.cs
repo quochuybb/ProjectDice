@@ -304,12 +304,37 @@ public class Combatant : MonoBehaviour
 
     public void ReceiveHeal(int healAmount)
     {
-        currentHealth += healAmount;
-        // Clamp health so it doesn't go over the maximum
+        // Work with a local variable to hold the final, modified heal amount.
+        int finalHealAmount = healAmount;
+
+        // --- NEW HEALING DISRUPTION LOGIC ---
+        // Check for Blight first, as it's the most powerful effect.
+        if (HasStatusEffect(StatusEffectType.Blight))
+        {
+            finalHealAmount = 0;
+            Debug.Log($"<color=purple>{characterSheet.name} is Blighted and cannot be healed!</color>");
+        }
+        // If not Blighted, then check for Mortal Wound. They do not stack.
+        else if (HasStatusEffect(StatusEffectType.MortalWound))
+        {
+            // Reduce healing by 50%
+            finalHealAmount = Mathf.RoundToInt(finalHealAmount * 0.5f);
+            Debug.Log($"<color=maroon>{characterSheet.name} has a Mortal Wound! Healing reduced to {finalHealAmount}.</color>");
+        }
+
+        // If the heal amount was reduced to 0, no need to proceed further.
+        if (finalHealAmount <= 0)
+        {
+            // Still log a "healed for 0" message to make it clear why health didn't change.
+            Debug.Log($"<color=green>{characterSheet.name} is healed for 0. New HP: {currentHealth}.</color>");
+            return;
+        }
+        
+        currentHealth += finalHealAmount;
         currentHealth = Mathf.Min(currentHealth, (int)Stats.MaxHealth.Value);
 
         OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
-        Debug.Log($"<color=green>{characterSheet.name} is healed for {healAmount}. New HP: {currentHealth}.</color>");
+        Debug.Log($"<color=green>{characterSheet.name} is healed for {finalHealAmount}. New HP: {currentHealth}.</color>");
     }
 
     public void ProcessDoTsAndHoTs()
