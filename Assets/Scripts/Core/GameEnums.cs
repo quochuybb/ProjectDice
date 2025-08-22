@@ -51,9 +51,9 @@ public enum StatusEffectType
     PowerUp,
     Vulnerable,
     Weaken,
-    // --- ADD THESE ---
     Stun,
-    Freeze
+    Freeze,
+    Poison
 }
 
 public enum EffectClassification

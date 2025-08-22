@@ -59,7 +59,7 @@ public class CombatManager : MonoBehaviour
         // - Update the skill buttons (for effects like Empower that change affordability).
         playerCombatant.OnStatusEffectsChanged += (effects) =>
         {
-            combatUI.UpdateStatusEffectsUI(effects);
+            combatUI.UpdatePlayerStatusEffectsUI(effects);
             combatUI.UpdatePlayerStats(playerCombatant);
             combatUI.UpdateSkillButtons(playerCombatant);
         };

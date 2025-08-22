@@ -61,7 +61,7 @@ public class Combatant : MonoBehaviour
             finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
             Debug.Log($"<color=orange>Target is Vulnerable! Damage increased to {finalDamage}.</color>");
         }
-        
+
         currentHealth -= finalDamage;
         if (currentHealth < 0) currentHealth = 0;
 
@@ -91,7 +91,7 @@ public class Combatant : MonoBehaviour
             Debug.Log($"<color=orange>{characterSheet.name} does not have enough energy for {skill.skillName}!</color>");
             return;
         }
-        
+
         // --- 2. CONSUME RESOURCES ---
         currentEnergy -= finalEnergyCost;
         if (isEmpowered)
@@ -101,7 +101,7 @@ public class Combatant : MonoBehaviour
         }
         OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
         Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
-        
+
         // Put the skill on cooldown after it has been successfully used
         if (skill.cooldown > 0)
         {
@@ -134,11 +134,11 @@ public class Combatant : MonoBehaviour
 
                 int baseSkillDamage = skill.baseDamage + (int)(Stats.Might.Value * skill.mightRatio);
                 int totalDamage = Mathf.RoundToInt(baseSkillDamage * damageMultiplier);
-                
+
                 Debug.Log($"Deals {totalDamage} damage to {target.characterSheet.name}.");
                 effectTarget.TakeDamage(totalDamage);
                 break;
-                
+
             case SkillEffectType.Healing:
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
                 this.ReceiveHeal(totalHeal);
@@ -197,8 +197,7 @@ public class Combatant : MonoBehaviour
         if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
         {
             float grit = Stats.Grit.Value;
-            // GDD Formula: Resist Chance % = (Grit / (Grit + 100)) * 50
-            float resistChance = (grit / (grit + 100f)) * 0.75f;
+            float resistChance = (grit / (grit + 100f)) * 0.8f;
 
             if (Random.value < resistChance)
             {
@@ -214,7 +213,12 @@ public class Combatant : MonoBehaviour
             // Use the passed-in skill and caster's stats to determine the power per tick.
             effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
         }
-        
+
+        if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison))
+        {
+            effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
+        }
+
         // --- 3. ADD EFFECT TO LIST ---
         activeStatusEffects.Add(effect);
 
@@ -226,17 +230,17 @@ public class Combatant : MonoBehaviour
         {
             effect.IsNewlyApplied = false;
         }
-        
+
         Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
-        
+
         // Freeze also applies a 1-turn Vulnerable debuff.
         if (effect.Type == StatusEffectType.Freeze)
         {
             var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
             // We call this method again recursively. The sourceSkill is null as this is a secondary effect.
-            ApplyStatusEffect(vulnerableDebuff, caster, null); 
+            ApplyStatusEffect(vulnerableDebuff, caster, null);
         }
-        
+
         // Fortify applies a temporary flat armor bonus.
         if (effect.Type == StatusEffectType.Fortify)
         {
@@ -244,7 +248,7 @@ public class Combatant : MonoBehaviour
             StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
             Stats.Armor.AddModifier(armorBuff);
         }
-        
+
         // --- 5. NOTIFY UI ---
         // Fire the event to let the UI know that it needs to update.
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
@@ -286,7 +290,7 @@ public class Combatant : MonoBehaviour
             {
                 Debug.Log($"<color=grey>{characterSheet.name}'s {effect.Type} has expired at turn end.</color>");
                 // The existing RemoveStatusEffect method correctly handles cleanup (like for Fortify)
-                RemoveStatusEffect(effect.Type); 
+                RemoveStatusEffect(effect.Type);
             }
         }
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
@@ -307,10 +311,9 @@ public class Combatant : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
         Debug.Log($"<color=green>{characterSheet.name} is healed for {healAmount}. New HP: {currentHealth}.</color>");
     }
-    
+
     public void ProcessDoTsAndHoTs()
     {
-        // Create a copy to avoid issues if an effect is removed during processing
         var effectsToProcess = activeStatusEffects.ToList();
 
         foreach (var effect in effectsToProcess)
@@ -319,13 +322,36 @@ public class Combatant : MonoBehaviour
             {
                 case StatusEffectType.Burn:
                     Debug.Log($"{characterSheet.name} is burned!");
-                    TakeDamage(effect.TickValue);
+                    TakeDamage(effect.TickValue); // Burn is affected by armor
                     break;
+                    
+                // --- ADD THIS CASE ---
+                case StatusEffectType.Poison:
+                    Debug.Log($"{characterSheet.name} is poisoned!");
+                    TakeTrueDamage(effect.TickValue); // Poison bypasses armor
+                    break;
+
                 case StatusEffectType.Regeneration:
                     Debug.Log($"{characterSheet.name} regenerates health!");
                     ReceiveHeal(effect.TickValue);
                     break;
             }
+        }
+    }
+    
+    public void TakeTrueDamage(int damage)
+    {
+        // This method bypasses all armor and damage reduction calculations.
+        
+        currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+
+        OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
+        Debug.Log($"{characterSheet.name} takes {damage} TRUE damage!");
+
+        if (currentHealth <= 0)
+        {
+            Die();
         }
     }
 }

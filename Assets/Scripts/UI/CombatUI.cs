@@ -246,7 +246,7 @@ public class CombatUI : MonoBehaviour
     }
 
 
-    public void UpdateStatusEffectsUI(List<StatusEffect> effects)
+    public void UpdatePlayerStatusEffectsUI(List<StatusEffect> effects)
     {
         if (effects == null || effects.Count == 0)
         {
@@ -258,8 +258,8 @@ public class CombatUI : MonoBehaviour
         sb.AppendLine("<b>Effects:</b>");
         foreach(var effect in effects)
         {
-            // --- NEW LOGIC TO SHOW TICK VALUE ---
-            if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration)
+            // Add Poison to this condition
+            if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
             {
                 sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
             }
