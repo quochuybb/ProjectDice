@@ -198,7 +198,7 @@ public class Combatant : MonoBehaviour
         {
             float grit = Stats.Grit.Value;
             // GDD Formula: Resist Chance % = (Grit / (Grit + 100)) * 50
-            float resistChance = (grit / (grit + 100f)) * 0.5f;
+            float resistChance = (grit / (grit + 100f)) * 0.75f;
 
             if (Random.value < resistChance)
             {
