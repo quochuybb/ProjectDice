@@ -27,3 +27,5 @@ MonoBehaviour:
   startingSkills:
   - {fileID: 11400000, guid: 3114bcb7487dd92499a089133309ac6a, type: 2}
   - {fileID: 11400000, guid: d598d1b9df88d6a4a9055f7c68660e9b, type: 2}
+  - {fileID: 11400000, guid: f6e0d39a353fce24599e7dd4c294657b, type: 2}
+  - {fileID: 11400000, guid: e39ea33a1ec03d841a9087141b230d99, type: 2}

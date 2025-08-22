@@ -51,17 +51,56 @@ public class Combatant : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        // --- NEW DODGE MECHANICS (TOP PRIORITY) ---
+
+        // 1. Check for the Dodge BUFF first.
+        if (HasStatusEffect(StatusEffectType.Dodge))
+        {
+            // The buff is consumed whether the dodge succeeds or fails.
+            RemoveStatusEffect(StatusEffectType.Dodge);
+
+            // Roll for the buff's dodge chance (75%).
+            if (Random.value < 0.75f) 
+            {
+                Debug.Log($"<color=cyan>{characterSheet.name} dodged the attack!</color>");
+                // We can invoke this to ensure any UI listening for "action" gets an update, even if value is same.
+                OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
+                return; // Exit the method entirely. No damage is taken.
+            }
+            else
+            {
+                Debug.Log($"<color=grey>{characterSheet.name} failed to dodge the empowered attack.</color>");
+                // If the dodge fails, the code continues to the damage calculation below.
+            }
+        }
+        // 2. If no Dodge buff, check for passive dodge from the Speed stat.
+        else
+        {
+            float speed = Stats.Speed.Value;
+            // GDD Formula: Base Dodge % = (Speed / (Speed + 150)) * 20
+            float passiveDodgeChance = (speed / (speed + 150f)) * 0.2f; // 0.2f = 20% cap
+
+            if (Random.value < passiveDodgeChance)
+            {
+                Debug.Log($"<color=cyan>{characterSheet.name} passively dodged due to high Speed!</color>");
+                OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
+                return; // Exit the method. No damage taken.
+            }
+        }
+
+        // --- END OF DODGE MECHANICS ---
+
+        // If no dodge occurred, proceed with standard damage calculation.
         float armor = Stats.Armor.Value;
         float damageReduction = (armor / (armor + 150));
         int finalDamage = Mathf.RoundToInt(damage * (1 - damageReduction));
 
-        // --- VULNERABLE LOGIC ---
         if (HasStatusEffect(StatusEffectType.Vulnerable))
         {
             finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
             Debug.Log($"<color=orange>Target is Vulnerable! Damage increased to {finalDamage}.</color>");
         }
-
+        
         currentHealth -= finalDamage;
         if (currentHealth < 0) currentHealth = 0;
 

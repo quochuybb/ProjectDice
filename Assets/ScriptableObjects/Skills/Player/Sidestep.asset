@@ -10,24 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
-  m_Name: Venom Lick
+  m_Name: Sidestep
   m_EditorClassIdentifier: 
-  skillName: Venom Lick
-  description: A swift attack laced with a toxin that ignores armor and primes the
-    enemy.
+  skillName: 
+  description: 
   rarity: 0
-  element: 5
-  energyCost: 20
-  cooldown: 2
+  element: 0
+  energyCost: 0
+  cooldown: 0
   effectType: 0
   targetType: 0
   baseDamage: 0
   mightRatio: 0
   baseHeal: 0
   intelligenceRatio: 0
-  appliesStatusEffect: 1
-  effectToApply: 10
-  effectDuration: 2
-  effectClassification: 1
-  baseDotHotValue: 5
-  dotHotIntelligenceRatio: 0.5
+  appliesStatusEffect: 0
+  effectToApply: 0
+  effectDuration: 0
+  effectClassification: 0
+  baseDotHotValue: 0
+  dotHotIntelligenceRatio: 0

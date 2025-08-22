@@ -12,21 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
   m_Name: Wounding Strike
   m_EditorClassIdentifier: 
-  skillName: 
+  skillName: Wounding Strike
   description: 
-  rarity: 0
-  element: 0
-  energyCost: 0
-  cooldown: 0
+  rarity: 1
+  element: 5
+  energyCost: 25
+  cooldown: 4
   effectType: 0
   targetType: 0
   baseDamage: 0
   mightRatio: 0
   baseHeal: 0
   intelligenceRatio: 0
-  appliesStatusEffect: 0
-  effectToApply: 0
-  effectDuration: 0
-  effectClassification: 0
+  appliesStatusEffect: 1
+  effectToApply: 11
+  effectDuration: 3
+  effectClassification: 1
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0

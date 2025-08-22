@@ -14,19 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   skillName: 
   description: 
-  rarity: 0
-  element: 0
-  energyCost: 0
-  cooldown: 0
+  rarity: 2
+  element: 5
+  energyCost: 35
+  cooldown: 4
   effectType: 0
   targetType: 0
   baseDamage: 0
   mightRatio: 0
   baseHeal: 0
   intelligenceRatio: 0
-  appliesStatusEffect: 0
-  effectToApply: 0
-  effectDuration: 0
-  effectClassification: 0
+  appliesStatusEffect: 1
+  effectToApply: 12
+  effectDuration: 2
+  effectClassification: 1
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0

@@ -55,7 +55,8 @@ public enum StatusEffectType
     Freeze,
     Poison,
     MortalWound,
-    Blight
+    Blight, 
+    Dodge
 }
 
 public enum EffectClassification
