@@ -17,7 +17,7 @@ public enum ElementType
     Verdant
 }
 
-public enum CombatState { START, PLAYERTURN, ENEMYTURN, WON, LOST }
+public enum CombatState { START, PLAYERTURN, ENEMYTURN, PROCESSING, WON, LOST }
 public enum SkillEffectType { Damage, Healing }
 public enum TargetType { Enemy, Self }
 
