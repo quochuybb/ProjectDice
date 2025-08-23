@@ -49,10 +49,8 @@ public class Combatant : MonoBehaviour
         OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
     }
 
-    public void TakeDamage(int damage)
+    public bool AttemptToHit()
     {
-        // --- NEW DODGE MECHANICS (TOP PRIORITY) ---
-
         // 1. Check for the Dodge BUFF first.
         if (HasStatusEffect(StatusEffectType.Dodge))
         {
@@ -62,35 +60,33 @@ public class Combatant : MonoBehaviour
             // Roll for the buff's dodge chance (75%).
             if (Random.value < 0.75f) 
             {
-                Debug.Log($"<color=cyan>{characterSheet.name} dodged the attack!</color>");
-                // We can invoke this to ensure any UI listening for "action" gets an update, even if value is same.
-                OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
-                return; // Exit the method entirely. No damage is taken.
+                Debug.Log($"<color=cyan>{characterSheet.name} dodged the attack via Dodge effect!</color>");
+                return false; // The attack is dodged.
             }
             else
             {
                 Debug.Log($"<color=grey>{characterSheet.name} failed to dodge the empowered attack.</color>");
-                // If the dodge fails, the code continues to the damage calculation below.
+                // If the dodge fails, continue to the passive check.
             }
         }
-        // 2. If no Dodge buff, check for passive dodge from the Speed stat.
-        else
+        
+        // 2. If no Dodge buff or if it failed, check for passive dodge from the Speed stat.
+        float speed = Stats.Speed.Value;
+        float passiveDodgeChance = (speed / (speed + 150f)) * 0.3f;
+
+        if (Random.value < passiveDodgeChance)
         {
-            float speed = Stats.Speed.Value;
-            // GDD Formula: Base Dodge % = (Speed / (Speed + 150)) * 20
-            float passiveDodgeChance = (speed / (speed + 150f)) * 0.2f; // 0.2f = 20% cap
-
-            if (Random.value < passiveDodgeChance)
-            {
-                Debug.Log($"<color=cyan>{characterSheet.name} passively dodged due to high Speed!</color>");
-                OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
-                return; // Exit the method. No damage taken.
-            }
+            Debug.Log($"<color=cyan>{characterSheet.name} passively dodged due to high Speed!</color>");
+            return false; // The attack is dodged.
         }
 
-        // --- END OF DODGE MECHANICS ---
-
-        // If no dodge occurred, proceed with standard damage calculation.
+        // 3. If all checks fail, the attack hits.
+        return true;
+    }
+    public void TakeDamage(int damage)
+    {
+        // The dodge logic has been removed from here.
+        
         float armor = Stats.Armor.Value;
         float damageReduction = (armor / (armor + 150));
         int finalDamage = Mathf.RoundToInt(damage * (1 - damageReduction));
@@ -112,10 +108,8 @@ public class Combatant : MonoBehaviour
             Die();
         }
     }
-
     public void UseSkill(Skill skill, Combatant target)
     {
-        // --- 1. PRE-ACTION CHECKS ---
         if (IsSkillOnCooldown(skill))
         {
             Debug.Log($"<color=orange>Cannot use {skill.skillName}, it is on cooldown!</color>");
@@ -131,7 +125,20 @@ public class Combatant : MonoBehaviour
             return;
         }
 
-        // --- 2. CONSUME RESOURCES ---
+        // --- NEW DODGE CHECK ---
+        // We only check for dodges on hostile actions. You can't "dodge" your own healing spell.
+        if (skill.targetType == TargetType.Enemy && !target.AttemptToHit())
+        {
+            // If the target dodges, the skill has no effect.
+            Debug.Log($"{characterSheet.name}'s attack was dodged by {target.characterSheet.name}!");
+            // We must also consume the energy for the attempt.
+            currentEnergy -= finalEnergyCost;
+            OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
+            // Exit the UseSkill method entirely. No damage, no status effects.
+            return; 
+        }
+        // --- END OF NEW DODGE CHECK ---
+
         currentEnergy -= finalEnergyCost;
         if (isEmpowered)
         {
@@ -141,56 +148,47 @@ public class Combatant : MonoBehaviour
         OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
         Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
 
-        // Put the skill on cooldown after it has been successfully used
         if (skill.cooldown > 0)
         {
             skillCooldowns[skill] = skill.cooldown;
             OnCooldownsChanged?.Invoke();
         }
 
-        // --- 3. DETERMINE TARGET ---
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
 
-        // --- 4. APPLY PRIMARY EFFECT (DAMAGE/HEAL) ---
         switch (skill.effectType)
         {
             case SkillEffectType.Damage:
                 float damageMultiplier = 1.0f;
-
                 if (HasStatusEffect(StatusEffectType.PowerUp))
                 {
                     damageMultiplier *= 1.5f;
                     Debug.Log($"<color=yellow>Power Up consumed! Damage multiplied.</color>");
                     RemoveStatusEffect(StatusEffectType.PowerUp);
                 }
-
                 if (HasStatusEffect(StatusEffectType.Weaken))
                 {
                     damageMultiplier *= 0.5f;
                     Debug.Log($"<color=brown>Weaken consumed! Damage reduced.</color>");
                     RemoveStatusEffect(StatusEffectType.Weaken);
                 }
-
                 int baseSkillDamage = skill.baseDamage + (int)(Stats.Might.Value * skill.mightRatio);
                 int totalDamage = Mathf.RoundToInt(baseSkillDamage * damageMultiplier);
-
                 Debug.Log($"Deals {totalDamage} damage to {target.characterSheet.name}.");
                 effectTarget.TakeDamage(totalDamage);
                 break;
-
             case SkillEffectType.Healing:
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
-                this.ReceiveHeal(totalHeal);
+                effectTarget.ReceiveHeal(totalHeal);
                 break;
         }
 
-        // --- 5. APPLY STATUS EFFECT (with the fix) ---
         if (skill.appliesStatusEffect)
         {
             effectTarget.ApplyStatusEffect(
                 new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification),
-                this, // The caster (this combatant)
-                skill // **THE FIX**: The source skill itself is passed directly
+                this,
+                skill
             );
         }
     }

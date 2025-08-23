@@ -15,12 +15,12 @@ MonoBehaviour:
   characterName: Slime
   characterSprite: {fileID: 2326333024471168493, guid: 97ba893235bb5b663a32f7b7be751304, type: 3}
   maxHealth: 1000
-  energy: 20
-  energyRegen: 10
+  energy: 30
+  energyRegen: 30
   might: 10
   intelligence: 5
   armor: 10
-  speed: 5
+  speed: 1000
   grit: 10
   luck: 0
   growth: 0

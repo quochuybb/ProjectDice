@@ -12,21 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
   m_Name: Sidestep
   m_EditorClassIdentifier: 
-  skillName: 
+  skillName: Sidestep
   description: 
-  rarity: 0
+  rarity: 2
   element: 0
-  energyCost: 0
-  cooldown: 0
-  effectType: 0
-  targetType: 0
+  energyCost: 35
+  cooldown: 2
+  effectType: 1
+  targetType: 1
   baseDamage: 0
   mightRatio: 0
   baseHeal: 0
   intelligenceRatio: 0
-  appliesStatusEffect: 0
-  effectToApply: 0
-  effectDuration: 0
+  appliesStatusEffect: 1
+  effectToApply: 13
+  effectDuration: 1
   effectClassification: 0
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0
