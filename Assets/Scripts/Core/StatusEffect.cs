@@ -4,10 +4,10 @@ public class StatusEffect
     public int Duration { get; set; }
     public EffectClassification Classification { get; private set; }
     public bool IsNewlyApplied { get; set; }
+    public int TickValue { get; set; }
     
-    // --- NEW FIELD ---
-    // Stores the calculated damage/healing per turn
-    public int TickValue { get; set; } 
+    // --- NEW FIELD FOR STACKS ---
+    public int Stacks { get; set; }
 
     public StatusEffect(StatusEffectType type, int duration, EffectClassification classification)
     {
@@ -15,5 +15,7 @@ public class StatusEffect
         Duration = duration;
         Classification = classification;
         IsNewlyApplied = true;
+        // --- SET DEFAULT STACK COUNT ---
+        Stacks = 1; 
     }
 }

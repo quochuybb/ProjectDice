@@ -20,7 +20,7 @@ MonoBehaviour:
   might: 10
   intelligence: 5
   armor: 10
-  speed: 1000
+  speed: 0
   grit: 10
   luck: 0
   growth: 0

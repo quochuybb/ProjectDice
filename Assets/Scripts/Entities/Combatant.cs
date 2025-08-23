@@ -229,68 +229,95 @@ public class Combatant : MonoBehaviour
 
     public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourceSkill)
     {
-        // --- 1. PRE-APPLICATION CHECKS (Gatekeeping) ---
-        // Check for Grit resistance against Stun and Freeze.
-        if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
+        // --- NEW: WOUND STACKING LOGIC ---
+        if (effect.Type == StatusEffectType.Wound)
         {
-            float grit = Stats.Grit.Value;
-            float resistChance = (grit / (grit + 100f)) * 0.8f;
-
-            if (Random.value < resistChance)
+            StatusEffect existingWound = activeStatusEffects.FirstOrDefault(e => e.Type == StatusEffectType.Wound);
+            if (existingWound != null)
             {
-                Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
-                return; // Exit the method immediately; the effect is not applied.
+                // If Wound already exists, just add stacks and check for Bleed.
+                existingWound.Stacks += sourceSkill.stacksToApply;
+                Debug.Log($"<color=red>{characterSheet.name} gains {sourceSkill.stacksToApply} Wound stacks! (Total: {existingWound.Stacks})</color>");
+                CheckForBleed(existingWound, caster, sourceSkill);
+                OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+                return; // Exit here to prevent adding a duplicate Wound effect
+            }
+            else
+            {
+                // If this is the first Wound application.
+                effect.Stacks = sourceSkill.stacksToApply;
+                // Set a high duration as Wound is a counter, not a timed effect.
+                effect.Duration = 99; 
             }
         }
 
-        // --- 2. VALUE CALCULATION ---
-        // Calculate and store the tick value for DoTs and HoTs.
-        if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration))
+        // Grit resistance logic
+        if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
         {
-            // Use the passed-in skill and caster's stats to determine the power per tick.
-            effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
+            float grit = Stats.Grit.Value;
+            float resistChance = (grit / (grit + 100f)) * 0.5f;
+            if (Random.value < resistChance)
+            {
+                Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
+                return; 
+            }
         }
 
+        // TickValue calculation
         if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison))
         {
             effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
         }
-
-        // --- 3. ADD EFFECT TO LIST ---
+        
         activeStatusEffects.Add(effect);
 
-        // --- 4. POST-APPLICATION LOGIC (Special Cases) ---
-
-        // FIX: Stun and Freeze must have their 'newly applied' flag disabled immediately
-        // so they correctly expire after one turn.
+        // Stun/Freeze IsNewlyApplied flag fix
         if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
         {
             effect.IsNewlyApplied = false;
         }
-
+        
         Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
-
-        // Freeze also applies a 1-turn Vulnerable debuff.
+        
+        // Freeze's Vulnerable effect
         if (effect.Type == StatusEffectType.Freeze)
         {
             var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
-            // We call this method again recursively. The sourceSkill is null as this is a secondary effect.
-            ApplyStatusEffect(vulnerableDebuff, caster, null);
+            ApplyStatusEffect(vulnerableDebuff, caster, null); 
         }
-
-        // Fortify applies a temporary flat armor bonus.
+        
+        // Fortify's armor buff
         if (effect.Type == StatusEffectType.Fortify)
         {
-            // The StatusEffect object itself is the 'source' of the modifier, making it easy to remove when it expires.
             StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
             Stats.Armor.AddModifier(armorBuff);
         }
-
-        // --- 5. NOTIFY UI ---
-        // Fire the event to let the UI know that it needs to update.
+        
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
     }
 
+    private void CheckForBleed(StatusEffect woundEffect, Combatant caster, Skill sourceSkill)
+    {
+        if (woundEffect.Stacks >= 10)
+        {
+            Debug.Log($"<color=darkred>Wound threshold reached! {characterSheet.name} starts to Bleed!</color>");
+            
+            woundEffect.Stacks -= 10;
+            if (woundEffect.Stacks <= 0)
+            {
+                RemoveStatusEffect(StatusEffectType.Wound);
+            }
+
+            // Apply a 3-turn Bleed effect
+            var bleedEffect = new StatusEffect(StatusEffectType.Bleed, 3, EffectClassification.Debuff);
+            ApplyStatusEffect(bleedEffect, caster, sourceSkill);
+            
+            // --- THE FIX IS HERE ---
+            // GDD: Bleed also applies Mortal Wound for its duration.
+            var mortalWoundEffect = new StatusEffect(StatusEffectType.MortalWound, 3, EffectClassification.Debuff);
+            ApplyStatusEffect(mortalWoundEffect, caster, null); // No source skill needed for Mortal Wound
+        }
+    }
     public void RemoveStatusEffect(StatusEffectType type)
     {
         StatusEffect effectToRemove = activeStatusEffects.FirstOrDefault(e => e.Type == type);
@@ -384,18 +411,22 @@ public class Combatant : MonoBehaviour
             {
                 case StatusEffectType.Burn:
                     Debug.Log($"{characterSheet.name} is burned!");
-                    TakeDamage(effect.TickValue); // Burn is affected by armor
+                    TakeDamage(effect.TickValue);
                     break;
-                    
-                // --- ADD THIS CASE ---
                 case StatusEffectType.Poison:
                     Debug.Log($"{characterSheet.name} is poisoned!");
-                    TakeTrueDamage(effect.TickValue); // Poison bypasses armor
+                    TakeTrueDamage(effect.TickValue);
                     break;
-
                 case StatusEffectType.Regeneration:
                     Debug.Log($"{characterSheet.name} regenerates health!");
                     ReceiveHeal(effect.TickValue);
+                    break;
+                // --- ADD THIS CASE ---
+                case StatusEffectType.Bleed:
+                    // GDD: 20% of Max HP as True Damage
+                    int bleedDamage = Mathf.RoundToInt(Stats.MaxHealth.Value * 0.20f);
+                    Debug.Log($"{characterSheet.name} is Bleeding heavily!");
+                    TakeTrueDamage(bleedDamage);
                     break;
             }
         }

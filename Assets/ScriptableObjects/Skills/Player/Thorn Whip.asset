@@ -10,24 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
-  m_Name: Touch Of Despair
+  m_Name: Thorn Whip
   m_EditorClassIdentifier: 
-  skillName: Touch Of Despair
+  skillName: Thorn Whip
   description: 
-  rarity: 2
+  rarity: 0
   element: 5
-  energyCost: 35
-  cooldown: 4
+  energyCost: 20
+  cooldown: 0
   effectType: 0
   targetType: 0
-  baseDamage: 0
-  mightRatio: 0
+  baseDamage: 5
+  mightRatio: 0.5
   baseHeal: 0
   intelligenceRatio: 0
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0
   appliesStatusEffect: 1
-  effectToApply: 12
+  effectToApply: 14
   effectClassification: 1
-  effectDuration: 2
-  stacksToApply: 1
+  effectDuration: 99
+  stacksToApply: 2

@@ -1,7 +1,5 @@
 using UnityEngine;
 
-
-
 [CreateAssetMenu(fileName = "New Skill", menuName = "Characters/Skill")]
 public class Skill : ScriptableObject
 {
@@ -9,11 +7,8 @@ public class Skill : ScriptableObject
     public string skillName;
     [TextArea]
     public string description;
-
-    // --- THE CHANGED LINES ---
-    public Rarity rarity;
+    public Rarity rarity; 
     public ElementType element;
-    // --- END OF CHANGES ---
 
     [Header("Resource & Timing")]
     public int energyCost;
@@ -26,27 +21,24 @@ public class Skill : ScriptableObject
     [Header("Damage Effect")]
     public int baseDamage;
     public float mightRatio;
-
+    
     [Header("Healing Effect")]
     public int baseHeal;
     public float intelligenceRatio;
 
-    [Header("Status Effect")]
-    [Tooltip("Does this skill apply a status effect? If this a ")]
-    public bool appliesStatusEffect;
-    public StatusEffectType effectToApply;
-    [Tooltip("How many turns does the effect last?")]
-    public int effectDuration;
-
-    [Tooltip("Classification for the tickdown system")]
-    public EffectClassification effectClassification;
-    
     [Header("DoT / HoT Effect")]
     [Tooltip("Base damage/healing per turn for DoT/HoT effects.")]
     public int baseDotHotValue;
     [Tooltip("How much the DoT/HoT scales with the caster's Intelligence.")]
     public float dotHotIntelligenceRatio;
 
-
+    [Header("Status Effect")]
+    public bool appliesStatusEffect;
+    public StatusEffectType effectToApply;
+    public EffectClassification effectClassification;
+    public int effectDuration;
     
+    // --- NEW FIELD ---
+    [Tooltip("For stacking effects like Wound, how many stacks does this skill apply?")]
+    public int stacksToApply = 1;
 }

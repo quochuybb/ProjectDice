@@ -258,11 +258,17 @@ public class CombatUI : MonoBehaviour
         sb.AppendLine("<b>Effects:</b>");
         foreach(var effect in effects)
         {
-            // Add Poison to this condition
-            if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
+            // Check for stacking effects first
+            if (effect.Type == StatusEffectType.Wound)
+            {
+                sb.AppendLine($"- {effect.Type} (x{effect.Stacks})");
+            }
+            // Then check for DoT/HoT effects
+            else if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
             {
                 sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
             }
+            // Otherwise, it's a standard timed effect
             else
             {
                 sb.AppendLine($"- {effect.Type} ({effect.Duration})");
@@ -270,7 +276,7 @@ public class CombatUI : MonoBehaviour
         }
         playerStatusText.text = sb.ToString();
     }
-    
+        
     public void UpdateEnemyStatusEffectsUI(List<StatusEffect> effects)
     {
         if (effects == null || effects.Count == 0)
@@ -280,14 +286,21 @@ public class CombatUI : MonoBehaviour
         }
 
         StringBuilder sb = new StringBuilder();
-        // You can optionally add a title like this
+        // We can omit the "Effects:" title for the enemy to keep the UI cleaner, or add it if you prefer.
         // sb.AppendLine("<b>Effects:</b>"); 
         foreach(var effect in effects)
         {
-            if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration)
+            // Check for stacking effects first
+            if (effect.Type == StatusEffectType.Wound)
+            {
+                sb.AppendLine($"- {effect.Type} (x{effect.Stacks})");
+            }
+            // Then check for DoT/HoT effects
+            else if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
             {
                 sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
             }
+            // Otherwise, it's a standard timed effect
             else
             {
                 sb.AppendLine($"- {effect.Type} ({effect.Duration})");
