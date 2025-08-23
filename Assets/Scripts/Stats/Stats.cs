@@ -76,4 +76,5 @@ public class Stat
 
         return (float)Mathf.Ceil(finalValue);
     }
+    
 }

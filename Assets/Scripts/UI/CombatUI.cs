@@ -256,19 +256,43 @@ public class CombatUI : MonoBehaviour
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("<b>Effects:</b>");
+
         foreach(var effect in effects)
         {
-            // Check for stacking effects first
+            // Case 1: Stacking effects like Wound
             if (effect.Type == StatusEffectType.Wound)
             {
                 sb.AppendLine($"- {effect.Type} (x{effect.Stacks})");
             }
-            // Then check for DoT/HoT effects
-            else if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
+            // Case 2: DoT/HoT effects that show a value per turn
+            else if (effect.Type == StatusEffectType.Burn || 
+                    effect.Type == StatusEffectType.Regeneration || 
+                    effect.Type == StatusEffectType.Poison)
             {
                 sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
             }
-            // Otherwise, it's a standard timed effect
+            // Case 3: Stat modifier effects
+            else if (effect.Type == StatusEffectType.StatUp || effect.Type == StatusEffectType.StatDown)
+            {
+                // Determine the text based on the effect type
+                string effectName = (effect.Type == StatusEffectType.StatUp) ? "Up" : "Down";
+                
+                // Determine the text for the value
+                string valueText = "";
+                if (effect.ModType == StatModType.Flat)
+                {
+                    // Show a "+" for positive flat values
+                    valueText = effect.ModValue.ToString("+#;-#");
+                }
+                else // Percent
+                {
+                    // Show as a percentage with a "+"
+                    valueText = (effect.ModValue * 100).ToString("+#;-#") + "%";
+                }
+                
+                sb.AppendLine($"- {effect.TargetStat} {effectName} ({valueText}) ({effect.Duration})");
+            }
+            // Case 4: All other standard, timed effects
             else
             {
                 sb.AppendLine($"- {effect.Type} ({effect.Duration})");
@@ -286,21 +310,45 @@ public class CombatUI : MonoBehaviour
         }
 
         StringBuilder sb = new StringBuilder();
-        // We can omit the "Effects:" title for the enemy to keep the UI cleaner, or add it if you prefer.
+        // You can optionally add a title here if you want
         // sb.AppendLine("<b>Effects:</b>"); 
+
         foreach(var effect in effects)
         {
-            // Check for stacking effects first
+            // Case 1: Stacking effects like Wound
             if (effect.Type == StatusEffectType.Wound)
             {
                 sb.AppendLine($"- {effect.Type} (x{effect.Stacks})");
             }
-            // Then check for DoT/HoT effects
-            else if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
+            // Case 2: DoT/HoT effects that show a value per turn
+            else if (effect.Type == StatusEffectType.Burn || 
+                    effect.Type == StatusEffectType.Regeneration || 
+                    effect.Type == StatusEffectType.Poison)
             {
                 sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
             }
-            // Otherwise, it's a standard timed effect
+            // Case 3: Stat modifier effects
+            else if (effect.Type == StatusEffectType.StatUp || effect.Type == StatusEffectType.StatDown)
+            {
+                // Determine the text based on the effect type
+                string effectName = (effect.Type == StatusEffectType.StatUp) ? "Up" : "Down";
+                
+                // Determine the text for the value
+                string valueText = "";
+                if (effect.ModType == StatModType.Flat)
+                {
+                    // Show a "+" for positive flat values
+                    valueText = effect.ModValue.ToString("+#;-#");
+                }
+                else // Percent
+                {
+                    // Show as a percentage with a "+"
+                    valueText = (effect.ModValue * 100).ToString("+#;-#") + "%";
+                }
+                
+                sb.AppendLine($"- {effect.TargetStat} {effectName} ({valueText}) ({effect.Duration})");
+            }
+            // Case 4: All other standard, timed effects
             else
             {
                 sb.AppendLine($"- {effect.Type} ({effect.Duration})");

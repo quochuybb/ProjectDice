@@ -58,7 +58,9 @@ public enum StatusEffectType
     Blight,
     Dodge,
     Wound,
-    Bleed
+    Bleed,
+    StatUp,
+    StatDown
 }
 
 public enum EffectClassification

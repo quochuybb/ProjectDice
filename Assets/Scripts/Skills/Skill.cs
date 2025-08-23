@@ -7,7 +7,7 @@ public class Skill : ScriptableObject
     public string skillName;
     [TextArea]
     public string description;
-    public Rarity rarity; 
+    public Rarity rarity;
     public ElementType element;
 
     [Header("Resource & Timing")]
@@ -21,7 +21,7 @@ public class Skill : ScriptableObject
     [Header("Damage Effect")]
     public int baseDamage;
     public float mightRatio;
-    
+
     [Header("Healing Effect")]
     public int baseHeal;
     public float intelligenceRatio;
@@ -37,8 +37,11 @@ public class Skill : ScriptableObject
     public StatusEffectType effectToApply;
     public EffectClassification effectClassification;
     public int effectDuration;
-    
-    // --- NEW FIELD ---
-    [Tooltip("For stacking effects like Wound, how many stacks does this skill apply?")]
     public int stacksToApply = 1;
+    
+    [Header("Stat Modifier Effect")]
+    [Tooltip("If this skill applies a StatUp or StatDown effect, define it here.")]
+    public StatType statToModify;
+    public StatModType modificationType;
+    public float modificationValue;
 }

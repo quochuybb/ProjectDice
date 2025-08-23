@@ -58,7 +58,7 @@ public class Combatant : MonoBehaviour
             RemoveStatusEffect(StatusEffectType.Dodge);
 
             // Roll for the buff's dodge chance (75%).
-            if (Random.value < 0.75f) 
+            if (Random.value < 0.75f)
             {
                 Debug.Log($"<color=cyan>{characterSheet.name} dodged the attack via Dodge effect!</color>");
                 return false; // The attack is dodged.
@@ -69,7 +69,7 @@ public class Combatant : MonoBehaviour
                 // If the dodge fails, continue to the passive check.
             }
         }
-        
+
         // 2. If no Dodge buff or if it failed, check for passive dodge from the Speed stat.
         float speed = Stats.Speed.Value;
         float passiveDodgeChance = (speed / (speed + 150f)) * 0.3f;
@@ -86,7 +86,7 @@ public class Combatant : MonoBehaviour
     public void TakeDamage(int damage)
     {
         // The dodge logic has been removed from here.
-        
+
         float armor = Stats.Armor.Value;
         float damageReduction = (armor / (armor + 150));
         int finalDamage = Mathf.RoundToInt(damage * (1 - damageReduction));
@@ -96,7 +96,7 @@ public class Combatant : MonoBehaviour
             finalDamage = Mathf.RoundToInt(finalDamage * 1.5f);
             Debug.Log($"<color=orange>Target is Vulnerable! Damage increased to {finalDamage}.</color>");
         }
-        
+
         currentHealth -= finalDamage;
         if (currentHealth < 0) currentHealth = 0;
 
@@ -135,10 +135,9 @@ public class Combatant : MonoBehaviour
             currentEnergy -= finalEnergyCost;
             OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
             // Exit the UseSkill method entirely. No damage, no status effects.
-            return; 
+            return;
         }
         // --- END OF NEW DODGE CHECK ---
-
         currentEnergy -= finalEnergyCost;
         if (isEmpowered)
         {
@@ -155,6 +154,22 @@ public class Combatant : MonoBehaviour
         }
 
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
+        if (skill.appliesStatusEffect)
+        {
+            StatusEffect newEffect;
+            // Check if the effect is a stat modifier to use the correct constructor
+            if (skill.effectToApply == StatusEffectType.StatUp || skill.effectToApply == StatusEffectType.StatDown)
+            {
+                newEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification,
+                                            skill.statToModify, skill.modificationType, skill.modificationValue);
+            }
+            else
+            {
+                newEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification);
+            }
+
+            effectTarget.ApplyStatusEffect(newEffect, this, skill);
+        }
 
         switch (skill.effectType)
         {
@@ -181,6 +196,7 @@ public class Combatant : MonoBehaviour
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
                 effectTarget.ReceiveHeal(totalHeal);
                 break;
+
         }
 
         if (skill.appliesStatusEffect)
@@ -247,7 +263,7 @@ public class Combatant : MonoBehaviour
                 // If this is the first Wound application.
                 effect.Stacks = sourceSkill.stacksToApply;
                 // Set a high duration as Wound is a counter, not a timed effect.
-                effect.Duration = 99; 
+                effect.Duration = 99;
             }
         }
 
@@ -259,16 +275,28 @@ public class Combatant : MonoBehaviour
             if (Random.value < resistChance)
             {
                 Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
-                return; 
+                return;
             }
         }
-
+        if (effect.Type == StatusEffectType.StatUp || effect.Type == StatusEffectType.StatDown)
+        {
+            // Get the specific stat we need to change (e.g., Armor, Might)
+            Stat targetStat = GetStat(effect.TargetStat);
+            if (targetStat != null)
+            {
+                // For StatDown, the value must be negative.
+                float value = (effect.Type == StatusEffectType.StatUp) ? effect.ModValue : -effect.ModValue;
+                var modifier = new StatModifier(value, effect.ModType, effect); // The effect itself is the source
+                targetStat.AddModifier(modifier);
+                Debug.Log($"Applied {effect.TargetStat} {effect.Type} of {value} to {characterSheet.name}.");
+            }
+        }
         // TickValue calculation
         if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison))
         {
             effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
         }
-        
+
         activeStatusEffects.Add(effect);
 
         // Stun/Freeze IsNewlyApplied flag fix
@@ -276,23 +304,23 @@ public class Combatant : MonoBehaviour
         {
             effect.IsNewlyApplied = false;
         }
-        
+
         Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
-        
+
         // Freeze's Vulnerable effect
         if (effect.Type == StatusEffectType.Freeze)
         {
             var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
-            ApplyStatusEffect(vulnerableDebuff, caster, null); 
+            ApplyStatusEffect(vulnerableDebuff, caster, null);
         }
-        
+
         // Fortify's armor buff
         if (effect.Type == StatusEffectType.Fortify)
         {
             StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
             Stats.Armor.AddModifier(armorBuff);
         }
-        
+
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
     }
 
@@ -301,7 +329,7 @@ public class Combatant : MonoBehaviour
         if (woundEffect.Stacks >= 10)
         {
             Debug.Log($"<color=darkred>Wound threshold reached! {characterSheet.name} starts to Bleed!</color>");
-            
+
             woundEffect.Stacks -= 10;
             if (woundEffect.Stacks <= 0)
             {
@@ -311,7 +339,7 @@ public class Combatant : MonoBehaviour
             // Apply a 3-turn Bleed effect
             var bleedEffect = new StatusEffect(StatusEffectType.Bleed, 3, EffectClassification.Debuff);
             ApplyStatusEffect(bleedEffect, caster, sourceSkill);
-            
+
             // --- THE FIX IS HERE ---
             // GDD: Bleed also applies Mortal Wound for its duration.
             var mortalWoundEffect = new StatusEffect(StatusEffectType.MortalWound, 3, EffectClassification.Debuff);
@@ -323,7 +351,17 @@ public class Combatant : MonoBehaviour
         StatusEffect effectToRemove = activeStatusEffects.FirstOrDefault(e => e.Type == type);
         if (effectToRemove != null)
         {
-            // --- FORTIFY CLEANUP ---
+            // --- NEW STAT MODIFIER CLEANUP ---
+            if (effectToRemove.Type == StatusEffectType.StatUp || effectToRemove.Type == StatusEffectType.StatDown)
+            {
+                Stat targetStat = GetStat(effectToRemove.TargetStat);
+                if (targetStat != null)
+                {
+                    targetStat.RemoveAllModifiersFromSource(effectToRemove);
+                    Debug.Log($"Removed {effectToRemove.TargetStat} {effectToRemove.Type} from {characterSheet.name}.");
+                }
+            }
+
             if (effectToRemove.Type == StatusEffectType.Fortify)
             {
                 Stats.Armor.RemoveAllModifiersFromSource(effectToRemove);
@@ -393,7 +431,7 @@ public class Combatant : MonoBehaviour
             Debug.Log($"<color=green>{characterSheet.name} is healed for 0. New HP: {currentHealth}.</color>");
             return;
         }
-        
+
         currentHealth += finalHealAmount;
         currentHealth = Mathf.Min(currentHealth, (int)Stats.MaxHealth.Value);
 
@@ -431,11 +469,11 @@ public class Combatant : MonoBehaviour
             }
         }
     }
-    
+
     public void TakeTrueDamage(int damage)
     {
         // This method bypasses all armor and damage reduction calculations.
-        
+
         currentHealth -= damage;
         if (currentHealth < 0) currentHealth = 0;
 
@@ -445,6 +483,24 @@ public class Combatant : MonoBehaviour
         if (currentHealth <= 0)
         {
             Die();
+        }
+    }
+    
+    public Stat GetStat(StatType type)
+    {
+        switch (type)
+        {
+            case StatType.MaxHealth:    return Stats.MaxHealth;
+            case StatType.Energy:       return Stats.Energy;
+            case StatType.EnergyRegen:  return Stats.EnergyRegen;
+            case StatType.Might:        return Stats.Might;
+            case StatType.Intelligence: return Stats.Intelligence;
+            case StatType.Armor:        return Stats.Armor;
+            case StatType.Speed:        return Stats.Speed;
+            case StatType.Grit:         return Stats.Grit;
+            case StatType.Luck:         return Stats.Luck;
+            case StatType.Growth:       return Stats.Growth;
+            default:                    return null; // Return null if the type is invalid
         }
     }
 }
