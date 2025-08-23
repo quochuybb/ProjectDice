@@ -31,6 +31,6 @@ MonoBehaviour:
   effectClassification: 0
   effectDuration: 2
   stacksToApply: 1
-  statToModify: 5
+  statToModify: 6
   modificationType: 0
   modificationValue: 20

@@ -15,7 +15,8 @@ MonoBehaviour:
   itemName: Runner's Medallion
   description: A lightweight bronze disc that makes you feel lighter on your feet.
   icon: {fileID: 0}
+  rarity: 0
   bonuses:
-  - stat: 6
+  - stat: 7
     type: 0
     value: 2

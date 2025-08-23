@@ -26,19 +26,20 @@ public enum StatModType
     Flat,       // Adds a flat value, calculated first.
     Percent     // Adds a percentage, calculated after all flat bonuses.
 }
-
+ 
 public enum StatType
 {
+    None, // Add this default value
     MaxHealth,
     Energy,
-    EnergyRegen, // Added for "Flowing Sash"
+    EnergyRegen,
     Might,
     Intelligence,
     Armor,
     Speed,
     Grit,
     Luck,
-    Growth,
+    Growth
 }
 
 public enum StatusEffectType

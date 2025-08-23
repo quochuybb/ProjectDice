@@ -116,6 +116,16 @@ public class Combatant : MonoBehaviour
             return;
         }
 
+        if (skill.targetType == TargetType.Enemy && !target.AttemptToHit())
+        {
+            Debug.Log($"{characterSheet.name}'s attack was dodged by {target.characterSheet.name}!");
+            bool isEmpoweredDodge = HasStatusEffect(StatusEffectType.Empower);
+            int finalEnergyCostDodge = isEmpoweredDodge ? 0 : skill.energyCost;
+            currentEnergy -= finalEnergyCostDodge;
+            OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
+            return;
+        }
+
         bool isEmpowered = HasStatusEffect(StatusEffectType.Empower);
         int finalEnergyCost = isEmpowered ? 0 : skill.energyCost;
 
@@ -124,20 +134,7 @@ public class Combatant : MonoBehaviour
             Debug.Log($"<color=orange>{characterSheet.name} does not have enough energy for {skill.skillName}!</color>");
             return;
         }
-
-        // --- NEW DODGE CHECK ---
-        // We only check for dodges on hostile actions. You can't "dodge" your own healing spell.
-        if (skill.targetType == TargetType.Enemy && !target.AttemptToHit())
-        {
-            // If the target dodges, the skill has no effect.
-            Debug.Log($"{characterSheet.name}'s attack was dodged by {target.characterSheet.name}!");
-            // We must also consume the energy for the attempt.
-            currentEnergy -= finalEnergyCost;
-            OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
-            // Exit the UseSkill method entirely. No damage, no status effects.
-            return;
-        }
-        // --- END OF NEW DODGE CHECK ---
+        
         currentEnergy -= finalEnergyCost;
         if (isEmpowered)
         {
@@ -146,30 +143,14 @@ public class Combatant : MonoBehaviour
         }
         OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
         Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
-
+        
         if (skill.cooldown > 0)
         {
             skillCooldowns[skill] = skill.cooldown;
             OnCooldownsChanged?.Invoke();
         }
-
+        
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
-        if (skill.appliesStatusEffect)
-        {
-            StatusEffect newEffect;
-            // Check if the effect is a stat modifier to use the correct constructor
-            if (skill.effectToApply == StatusEffectType.StatUp || skill.effectToApply == StatusEffectType.StatDown)
-            {
-                newEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification,
-                                            skill.statToModify, skill.modificationType, skill.modificationValue);
-            }
-            else
-            {
-                newEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification);
-            }
-
-            effectTarget.ApplyStatusEffect(newEffect, this, skill);
-        }
 
         switch (skill.effectType)
         {
@@ -194,18 +175,19 @@ public class Combatant : MonoBehaviour
                 break;
             case SkillEffectType.Healing:
                 int totalHeal = skill.baseHeal + (int)(Stats.Intelligence.Value * skill.intelligenceRatio);
-                effectTarget.ReceiveHeal(totalHeal);
+                this.ReceiveHeal(totalHeal);
                 break;
-
         }
 
         if (skill.appliesStatusEffect)
         {
-            effectTarget.ApplyStatusEffect(
-                new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification),
-                this,
-                skill
-            );
+            // --- FIX: Always use the full constructor ---
+            // For non-stat skills, the extra data will be default values (like StatType.None)
+            // which our UI will correctly ignore.
+            var newEffect = new StatusEffect(skill.effectToApply, skill.effectDuration, skill.effectClassification,
+                                            skill.statToModify, skill.modificationType, skill.modificationValue);
+
+            effectTarget.ApplyStatusEffect(newEffect, this, skill);
         }
     }
 

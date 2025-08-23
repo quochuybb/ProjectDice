@@ -4,7 +4,7 @@ public class StatusEffect
     public int Duration { get; set; }
     public EffectClassification Classification { get; private set; }
     public bool IsNewlyApplied { get; set; }
-    public int TickValue { get; set; } 
+    public int TickValue { get; set; }
     public int Stacks { get; set; }
 
     // --- NEW FIELDS FOR STAT MODIFICATIONS ---
@@ -20,9 +20,11 @@ public class StatusEffect
         Classification = classification;
         IsNewlyApplied = true;
         Stacks = 1;
+        // --- FIX: Explicitly set TargetStat to None ---
+        TargetStat = StatType.None;
     }
 
-    // --- NEW CONSTRUCTOR for Stat modifying effects ---
+    // Constructor for Stat modifying effects
     public StatusEffect(StatusEffectType type, int duration, EffectClassification classification, StatType targetStat, StatModType modType, float modValue)
     {
         Type = type;
@@ -30,7 +32,6 @@ public class StatusEffect
         Classification = classification;
         IsNewlyApplied = true;
         Stacks = 1;
-
         TargetStat = targetStat;
         ModType = modType;
         ModValue = modValue;

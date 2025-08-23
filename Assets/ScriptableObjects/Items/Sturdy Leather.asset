@@ -15,7 +15,8 @@ MonoBehaviour:
   itemName: Sturdy Leather
   description: A thick, well-oiled piece of leather. Simple but effective.
   icon: {fileID: 0}
+  rarity: 0
   bonuses:
-  - stat: 5
+  - stat: 6
     type: 0
     value: 4

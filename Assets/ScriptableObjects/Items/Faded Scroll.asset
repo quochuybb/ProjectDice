@@ -16,7 +16,8 @@ MonoBehaviour:
   description: An old scroll with faded runes. Just holding it seems to sharpen the
     mind.
   icon: {fileID: 0}
+  rarity: 0
   bonuses:
-  - stat: 4
+  - stat: 5
     type: 1
     value: 0.05

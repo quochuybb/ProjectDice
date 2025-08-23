@@ -17,6 +17,6 @@ MonoBehaviour:
   icon: {fileID: 0}
   rarity: 1
   bonuses:
-  - stat: 0
+  - stat: 1
     type: 1
     value: 0.1

@@ -16,7 +16,8 @@ MonoBehaviour:
   description: A smooth stone that feels warm to the touch. It seems to hum with
     a faint power.
   icon: {fileID: 0}
+  rarity: 0
   bonuses:
-  - stat: 3
+  - stat: 4
     type: 0
     value: 2
