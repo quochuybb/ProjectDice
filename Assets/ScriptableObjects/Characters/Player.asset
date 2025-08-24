@@ -15,8 +15,8 @@ MonoBehaviour:
   characterName: Player
   characterSprite: {fileID: 7315897641784372060, guid: e7d77189b669c43d38934a3cce5e05b5, type: 3}
   maxHealth: 1000
-  energy: 30
-  energyRegen: 10
+  energy: 50
+  energyRegen: 50
   might: 10
   intelligence: 10
   armor: 0
@@ -47,3 +47,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f3f269b7a71e93247ba3c3acbed1b436, type: 2}
   - {fileID: 11400000, guid: f8394520345eb564b9aa9e4447f4cd27, type: 2}
   - {fileID: 11400000, guid: b662905aebd9161409de5b0c1ef87cc2, type: 2}
+  - {fileID: 11400000, guid: 48bdeba68603c9c4e8871b2e928a7193, type: 2}
+  - {fileID: 11400000, guid: 12c9fc60d31720844855929a527b7327, type: 2}

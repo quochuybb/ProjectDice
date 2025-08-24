@@ -63,7 +63,9 @@ public enum StatusEffectType
     StatUp,
     StatDown,
     Purification,
-    Unraveling
+    Unraveling,
+    Immunity,
+    Ethereal
 }
 
 public enum EffectClassification

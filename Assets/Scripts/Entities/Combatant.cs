@@ -86,7 +86,13 @@ public class Combatant : MonoBehaviour
     public void TakeDamage(int damage)
     {
         // The dodge logic has been removed from here.
-
+        if (HasStatusEffect(StatusEffectType.Immunity) || HasStatusEffect(StatusEffectType.Ethereal))
+        {
+            Debug.Log($"<color=yellow>{characterSheet.name} is Immune and takes no damage!</color>");
+            // Invoke OnHealthChanged to ensure UI updates if it needs to react to a "0 damage" event.
+            OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
+            return; // Exit the method entirely.
+        }
         float armor = Stats.Armor.Value;
         float damageReduction = (armor / (armor + 150));
         int finalDamage = Mathf.RoundToInt(damage * (1 - damageReduction));
@@ -237,6 +243,12 @@ public class Combatant : MonoBehaviour
 
     public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourceSkill)
     {
+        if ((HasStatusEffect(StatusEffectType.Immunity) || HasStatusEffect(StatusEffectType.Ethereal)) && 
+            effect.Classification == EffectClassification.Debuff)
+        {
+            Debug.Log($"<color=yellow>{characterSheet.name} is Immune and resists the {effect.Type} debuff!</color>");
+            return; // Exit before the effect is applied.
+        }
         // --- NEW: WOUND STACKING LOGIC ---
         if (effect.Type == StatusEffectType.Wound)
         {
@@ -485,7 +497,12 @@ public class Combatant : MonoBehaviour
     public void TakeTrueDamage(int damage)
     {
         // This method bypasses all armor and damage reduction calculations.
-
+        if (HasStatusEffect(StatusEffectType.Immunity) || HasStatusEffect(StatusEffectType.Ethereal))
+        {
+            Debug.Log($"<color=yellow>{characterSheet.name} is Immune and takes no TRUE damage!</color>");
+            OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
+            return; // Exit the method entirely.
+        }
         currentHealth -= damage;
         if (currentHealth < 0) currentHealth = 0;
 

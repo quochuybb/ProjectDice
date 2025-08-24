@@ -58,6 +58,14 @@ public class CombatManager : MonoBehaviour
 
     IEnumerator PlayerTurn()
     {
+        if (playerCombatant.HasStatusEffect(StatusEffectType.Ethereal))
+        {
+            // We use the existing ProcessSkippedTurn helper, which handles the end-of-turn logic.
+            // We need a specific log message for this case.
+            Debug.Log($"<color=grey>{playerCombatant.characterSheet.name} is Ethereal and cannot act this turn.</color>");
+            yield return StartCoroutine(ProcessSkippedTurn(playerCombatant));
+            yield break;
+        }
         if (playerCombatant.HasStatusEffect(StatusEffectType.Stun) || playerCombatant.HasStatusEffect(StatusEffectType.Freeze))
         {
             yield return StartCoroutine(ProcessSkippedTurn(playerCombatant));
@@ -176,21 +184,34 @@ public class CombatManager : MonoBehaviour
     // GAME STATE & HELPER METHODS
     // ===================================================================
 
-    private IEnumerator ProcessSkippedTurn(Combatant stunnedCombatant)
+    private IEnumerator ProcessSkippedTurn(Combatant skippedCombatant)
     {
-        string effectName = stunnedCombatant.HasStatusEffect(StatusEffectType.Freeze) ? "Frozen" : "Stunned";
-        Debug.Log($"<color=orange>{stunnedCombatant.characterSheet.name} is {effectName} and skips their turn!</color>");
+        // Check for Ethereal FIRST to give it a unique, non-alarming message.
+        // We check this by seeing if the combatant is the player.
+        if (skippedCombatant == playerCombatant && skippedCombatant.HasStatusEffect(StatusEffectType.Ethereal))
+        {
+            // This log is handled in the PlayerTurn coroutine before this method is called.
+            // We can add a secondary log here if needed, but it's optional.
+        }
+        else // If not Ethereal, it must be Stun or Freeze.
+        {
+            string effectName = skippedCombatant.HasStatusEffect(StatusEffectType.Freeze) ? "Frozen" : "Stunned";
+            Debug.Log($"<color=orange>{skippedCombatant.characterSheet.name} is {effectName} and skips their turn!</color>");
+        }
 
-        stunnedCombatant.TickDownStatusEffectsAtTurnEnd();
+        // A skipped turn still needs to tick down all status effects at the end.
+        skippedCombatant.TickDownStatusEffectsAtTurnEnd();
+        
+        // Pause to let the player see what happened.
         yield return new WaitForSeconds(1.5f);
 
-        // Determine next state and start the appropriate turn
-        if (stunnedCombatant == playerCombatant)
+        // Determine the next state based on who was skipped.
+        if (skippedCombatant == playerCombatant)
         {
             state = CombatState.ENEMYTURN;
             StartCoroutine(EnemyTurn());
         }
-        else
+        else // It was the enemy
         {
             state = CombatState.PLAYERTURN;
             StartCoroutine(PlayerTurn());
