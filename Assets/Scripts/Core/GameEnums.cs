@@ -61,7 +61,9 @@ public enum StatusEffectType
     Wound,
     Bleed,
     StatUp,
-    StatDown
+    StatDown,
+    Purification,
+    Unraveling
 }
 
 public enum EffectClassification

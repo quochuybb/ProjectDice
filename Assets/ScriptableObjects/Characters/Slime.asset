@@ -15,8 +15,8 @@ MonoBehaviour:
   characterName: Slime
   characterSprite: {fileID: 2326333024471168493, guid: 97ba893235bb5b663a32f7b7be751304, type: 3}
   maxHealth: 1000
-  energy: 30
-  energyRegen: 30
+  energy: 50
+  energyRegen: 50
   might: 10
   intelligence: 5
   armor: 10
@@ -25,7 +25,27 @@ MonoBehaviour:
   luck: 0
   growth: 0
   startingSkills:
-  - {fileID: 11400000, guid: 3114bcb7487dd92499a089133309ac6a, type: 2}
-  - {fileID: 11400000, guid: d598d1b9df88d6a4a9055f7c68660e9b, type: 2}
-  - {fileID: 11400000, guid: f6e0d39a353fce24599e7dd4c294657b, type: 2}
+  - {fileID: 11400000, guid: 081837ba66d05284a8e9bce064dabcc2, type: 2}
+  - {fileID: 11400000, guid: c9759125972e5af4f880a1e0105c85fc, type: 2}
+  - {fileID: 11400000, guid: b662905aebd9161409de5b0c1ef87cc2, type: 2}
+  - {fileID: 11400000, guid: c0e04bd1563bfd347b38d3f9daa8ae67, type: 2}
+  - {fileID: 11400000, guid: 5655cb4e8bd28da48bc95a602f597e88, type: 2}
   - {fileID: 11400000, guid: e39ea33a1ec03d841a9087141b230d99, type: 2}
+  - {fileID: 11400000, guid: 2777f4d77f2e6e54d9a29e10ae809f0f, type: 2}
+  - {fileID: 11400000, guid: 27a952351e803884db147cc7a9486630, type: 2}
+  - {fileID: 11400000, guid: 94ab67d5a6734a54ca1fa1f866b35e09, type: 2}
+  - {fileID: 11400000, guid: f6e0d39a353fce24599e7dd4c294657b, type: 2}
+  - {fileID: 11400000, guid: c2909efea5e950e4993d04325e212294, type: 2}
+  - {fileID: 11400000, guid: f8394520345eb564b9aa9e4447f4cd27, type: 2}
+  - {fileID: 11400000, guid: ab7a35fd2785bf242b05f82e9343e20c, type: 2}
+  - {fileID: 11400000, guid: 096d6c761c1f1f94cbee88b78faf4d1d, type: 2}
+  - {fileID: 11400000, guid: 850510034272dc7458a75f8994d606cf, type: 2}
+  - {fileID: 11400000, guid: 34899e7896a9cf4468f80c1ee9d3fb16, type: 2}
+  - {fileID: 11400000, guid: 47d889b3608702248bf87ba3ca66b83c, type: 2}
+  - {fileID: 11400000, guid: 081e4068874e6af4f9a19a235a4129f4, type: 2}
+  - {fileID: 11400000, guid: f3f269b7a71e93247ba3c3acbed1b436, type: 2}
+  - {fileID: 11400000, guid: 9b6a61cd12ef50c48af6850e9ae608bc, type: 2}
+  - {fileID: 11400000, guid: bb06bf299a0504c49900dad71d3a544d, type: 2}
+  - {fileID: 11400000, guid: b4265d5a7c9fcfb4b9a14b0b94b62593, type: 2}
+  - {fileID: 11400000, guid: d598d1b9df88d6a4a9055f7c68660e9b, type: 2}
+  - {fileID: 11400000, guid: 3114bcb7487dd92499a089133309ac6a, type: 2}

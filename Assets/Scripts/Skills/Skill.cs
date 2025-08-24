@@ -38,10 +38,19 @@ public class Skill : ScriptableObject
     public EffectClassification effectClassification;
     public int effectDuration;
     public int stacksToApply = 1;
-    
+
     [Header("Stat Modifier Effect")]
     [Tooltip("If this skill applies a StatUp or StatDown effect, define it here.")]
     public StatType statToModify;
     public StatModType modificationType;
     public float modificationValue;
+    
+    [Header("Cleansing & Purging")]
+    [Tooltip("Does this skill instantly remove debuffs?")]
+    public bool doesCleanse;
+    public int cleanseAmount;
+
+    [Tooltip("Does this skill instantly remove buffs?")]
+    public bool doesPurge;
+    public int purgeAmount;
 }

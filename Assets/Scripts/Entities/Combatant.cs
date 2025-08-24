@@ -57,8 +57,8 @@ public class Combatant : MonoBehaviour
             // The buff is consumed whether the dodge succeeds or fails.
             RemoveStatusEffect(StatusEffectType.Dodge);
 
-            // Roll for the buff's dodge chance (75%).
-            if (Random.value < 0.75f)
+            // Roll for the buff's dodge chance (85%).
+            if (Random.value < 0.85f)
             {
                 Debug.Log($"<color=cyan>{characterSheet.name} dodged the attack via Dodge effect!</color>");
                 return false; // The attack is dodged.
@@ -134,7 +134,7 @@ public class Combatant : MonoBehaviour
             Debug.Log($"<color=orange>{characterSheet.name} does not have enough energy for {skill.skillName}!</color>");
             return;
         }
-        
+
         currentEnergy -= finalEnergyCost;
         if (isEmpowered)
         {
@@ -143,13 +143,13 @@ public class Combatant : MonoBehaviour
         }
         OnEnergyChanged?.Invoke(currentEnergy, (int)Stats.Energy.Value);
         Debug.Log($"{characterSheet.name} uses {skill.skillName}! ({finalEnergyCost} EN cost)");
-        
+
         if (skill.cooldown > 0)
         {
             skillCooldowns[skill] = skill.cooldown;
             OnCooldownsChanged?.Invoke();
         }
-        
+
         Combatant effectTarget = (skill.targetType == TargetType.Self) ? this : target;
 
         switch (skill.effectType)
@@ -188,6 +188,16 @@ public class Combatant : MonoBehaviour
                                             skill.statToModify, skill.modificationType, skill.modificationValue);
 
             effectTarget.ApplyStatusEffect(newEffect, this, skill);
+        }
+        
+        Combatant utilityTarget = (skill.targetType == TargetType.Self) ? this : target;
+        if (skill.doesCleanse)
+        {
+            utilityTarget.CleanseDebuffs(skill.cleanseAmount);
+        }
+        if (skill.doesPurge)
+        {
+            utilityTarget.PurgeBuffs(skill.purgeAmount);
         }
     }
 
@@ -388,35 +398,9 @@ public class Combatant : MonoBehaviour
 
     public void ReceiveHeal(int healAmount)
     {
-        // --- NEW WOUND REMOVAL LOGIC ---
-        // Check if the combatant has any Wound stacks.
-        StatusEffect existingWound = activeStatusEffects.FirstOrDefault(e => e.Type == StatusEffectType.Wound);
-        if (existingWound != null)
-        {
-            // Calculate half the stacks, rounding down.
-            int stacksToRemove = Mathf.FloorToInt(existingWound.Stacks / 2f);
-            if (stacksToRemove > 0)
-            {
-                existingWound.Stacks -= stacksToRemove;
-                Debug.Log($"<color=lime>Healing cleanses {stacksToRemove} Wound stacks! (Remaining: {existingWound.Stacks})</color>");
-                
-                // If all stacks are gone, remove the effect entirely.
-                if (existingWound.Stacks <= 0)
-                {
-                    RemoveStatusEffect(StatusEffectType.Wound);
-                }
-                else
-                {
-                    // If stacks remain, we still need to notify the UI to update the count.
-                    OnStatusEffectsChanged?.Invoke(activeStatusEffects);
-                }
-            }
-        }
-        // --- END OF NEW LOGIC ---
-
-        // The rest of the healing logic proceeds as normal.
         int finalHealAmount = healAmount;
 
+        // STEP 1: Check for healing prevention/reduction first.
         if (HasStatusEffect(StatusEffectType.Blight))
         {
             finalHealAmount = 0;
@@ -428,17 +412,44 @@ public class Combatant : MonoBehaviour
             Debug.Log($"<color=maroon>{characterSheet.name} has a Mortal Wound! Healing reduced to {finalHealAmount}.</color>");
         }
 
-        if (finalHealAmount <= 0)
+        // STEP 2: Apply the actual healing (if any).
+        if (finalHealAmount > 0)
+        {
+            currentHealth += finalHealAmount;
+            currentHealth = Mathf.Min(currentHealth, (int)Stats.MaxHealth.Value);
+            OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
+            Debug.Log($"<color=green>{characterSheet.name} is healed for {finalHealAmount}. New HP: {currentHealth}.</color>");
+        }
+        else
         {
             Debug.Log($"<color=green>{characterSheet.name} is healed for 0. New HP: {currentHealth}.</color>");
+            // If no healing occurred, we don't proceed to the wound cleansing step.
             return;
         }
         
-        currentHealth += finalHealAmount;
-        currentHealth = Mathf.Min(currentHealth, (int)Stats.MaxHealth.Value);
-
-        OnHealthChanged?.Invoke(currentHealth, (int)Stats.MaxHealth.Value);
-        Debug.Log($"<color=green>{characterSheet.name} is healed for {finalHealAmount}. New HP: {currentHealth}.</color>");
+        // STEP 3: Apply side-effects of successful healing (like cleansing Wounds).
+        // This logic is your code, just moved to the end of the method.
+        StatusEffect existingWound = activeStatusEffects.FirstOrDefault(e => e.Type == StatusEffectType.Wound);
+        if (existingWound != null)
+        {
+            int stacksToRemove = Mathf.FloorToInt(existingWound.Stacks / 2f);
+            if (stacksToRemove > 0)
+            {
+                existingWound.Stacks -= stacksToRemove;
+                Debug.Log($"<color=lime>Healing cleanses {stacksToRemove} Wound stacks! (Remaining: {existingWound.Stacks})</color>");
+                
+                if (existingWound.Stacks <= 0)
+                {
+                    // This will trigger the OnStatusEffectsChanged event internally.
+                    RemoveStatusEffect(StatusEffectType.Wound);
+                }
+                else
+                {
+                    // We still need to notify the UI to update the count if stacks remain.
+                    OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+                }
+            }
+        }
     }
 
     public void ProcessDoTsAndHoTs()
@@ -487,21 +498,85 @@ public class Combatant : MonoBehaviour
         }
     }
     
+    private void CleanseDebuffs(int amount)
+    {
+        // 1. Find all eligible debuffs to remove.
+        // We specifically exclude Wound and Bleed as per the rules.
+        var removableDebuffs = activeStatusEffects.Where(e => 
+            e.Classification == EffectClassification.Debuff &&
+            e.Type != StatusEffectType.Wound &&
+            e.Type != StatusEffectType.Bleed
+        ).ToList();
+
+        if (removableDebuffs.Count == 0) return;
+
+        Debug.Log($"<color=cyan>Attempting to cleanse {amount} debuffs from {characterSheet.name}...</color>");
+
+        // 2. Remove N random debuffs from the eligible list.
+        for (int i = 0; i < amount && removableDebuffs.Count > 0; i++)
+        {
+            int randomIndex = Random.Range(0, removableDebuffs.Count);
+            StatusEffect toRemove = removableDebuffs[randomIndex];
+            
+            Debug.Log($"<color=cyan>Cleansed {toRemove.Type}!</color>");
+            RemoveStatusEffect(toRemove.Type);
+            removableDebuffs.RemoveAt(randomIndex); // Prevent picking it again
+        }
+    }
+
+    // Removes a number of random BUFFS
+    private void PurgeBuffs(int amount)
+    {
+        // 1. Find all eligible buffs to remove.
+        // Future: You can add exclusions here for "Ultimate" buffs.
+        var removableBuffs = activeStatusEffects.Where(e => 
+            e.Classification == EffectClassification.Buff
+        ).ToList();
+
+        if (removableBuffs.Count == 0) return;
+
+        Debug.Log($"<color=orange>Attempting to purge {amount} buffs from {characterSheet.name}...</color>");
+
+        // 2. Remove N random buffs from the eligible list.
+        for (int i = 0; i < amount && removableBuffs.Count > 0; i++)
+        {
+            int randomIndex = Random.Range(0, removableBuffs.Count);
+            StatusEffect toRemove = removableBuffs[randomIndex];
+            
+            Debug.Log($"<color=orange>Purged {toRemove.Type}!</color>");
+            RemoveStatusEffect(toRemove.Type);
+            removableBuffs.RemoveAt(randomIndex);
+        }
+    }
+
+    public void ProcessCleansingEffectsAtTurnStart()
+    {
+        if (HasStatusEffect(StatusEffectType.Purification))
+        {
+            Debug.Log($"{characterSheet.name}'s Purification activates!");
+            CleanseDebuffs(1);
+        }
+        if (HasStatusEffect(StatusEffectType.Unraveling))
+        {
+            Debug.Log($"{characterSheet.name}'s Unraveling activates!");
+            PurgeBuffs(1);
+        }
+    }
     public Stat GetStat(StatType type)
     {
         switch (type)
         {
-            case StatType.MaxHealth:    return Stats.MaxHealth;
-            case StatType.Energy:       return Stats.Energy;
-            case StatType.EnergyRegen:  return Stats.EnergyRegen;
-            case StatType.Might:        return Stats.Might;
+            case StatType.MaxHealth: return Stats.MaxHealth;
+            case StatType.Energy: return Stats.Energy;
+            case StatType.EnergyRegen: return Stats.EnergyRegen;
+            case StatType.Might: return Stats.Might;
             case StatType.Intelligence: return Stats.Intelligence;
-            case StatType.Armor:        return Stats.Armor;
-            case StatType.Speed:        return Stats.Speed;
-            case StatType.Grit:         return Stats.Grit;
-            case StatType.Luck:         return Stats.Luck;
-            case StatType.Growth:       return Stats.Growth;
-            default:                    return null; // Return null if the type is invalid
+            case StatType.Armor: return Stats.Armor;
+            case StatType.Speed: return Stats.Speed;
+            case StatType.Grit: return Stats.Grit;
+            case StatType.Luck: return Stats.Luck;
+            case StatType.Growth: return Stats.Growth;
+            default: return null; // Return null if the type is invalid
         }
     }
 }

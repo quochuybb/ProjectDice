@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
+  m_Name: Purge
+  m_EditorClassIdentifier: 
+  skillName: Purge
+  description: 
+  rarity: 1
+  element: 0
+  energyCost: 20
+  cooldown: 2
+  effectType: 0
+  targetType: 0
+  baseDamage: 10
+  mightRatio: 0.1
+  baseHeal: 0
+  intelligenceRatio: 0
+  baseDotHotValue: 0
+  dotHotIntelligenceRatio: 0
+  appliesStatusEffect: 0
+  effectToApply: 0
+  effectClassification: 0
+  effectDuration: 0
+  stacksToApply: 1
+  statToModify: 0
+  modificationType: 0
+  modificationValue: 0
+  doesCleanse: 0
+  cleanseAmount: 0
+  doesPurge: 1
+  purgeAmount: 1

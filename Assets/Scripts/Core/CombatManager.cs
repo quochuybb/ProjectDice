@@ -63,6 +63,8 @@ public class CombatManager : MonoBehaviour
             yield return StartCoroutine(ProcessSkippedTurn(playerCombatant));
             yield break;
         }
+        playerCombatant.ProcessCleansingEffectsAtTurnStart();
+        if (CheckGameState()) yield break; 
 
         playerCombatant.ProcessDoTsAndHoTs();
         // --- NEW: Check game state after DoTs ---
@@ -84,7 +86,8 @@ public class CombatManager : MonoBehaviour
             yield return StartCoroutine(ProcessSkippedTurn(enemyCombatant));
             yield break;
         }
-
+        enemyCombatant.ProcessCleansingEffectsAtTurnStart();
+        if (CheckGameState()) yield break;
         enemyCombatant.ProcessDoTsAndHoTs();
         // --- NEW: Check game state after DoTs ---
         if (CheckGameState()) yield break;
