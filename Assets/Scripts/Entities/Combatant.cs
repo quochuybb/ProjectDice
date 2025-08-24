@@ -388,32 +388,52 @@ public class Combatant : MonoBehaviour
 
     public void ReceiveHeal(int healAmount)
     {
-        // Work with a local variable to hold the final, modified heal amount.
+        // --- NEW WOUND REMOVAL LOGIC ---
+        // Check if the combatant has any Wound stacks.
+        StatusEffect existingWound = activeStatusEffects.FirstOrDefault(e => e.Type == StatusEffectType.Wound);
+        if (existingWound != null)
+        {
+            // Calculate half the stacks, rounding down.
+            int stacksToRemove = Mathf.FloorToInt(existingWound.Stacks / 2f);
+            if (stacksToRemove > 0)
+            {
+                existingWound.Stacks -= stacksToRemove;
+                Debug.Log($"<color=lime>Healing cleanses {stacksToRemove} Wound stacks! (Remaining: {existingWound.Stacks})</color>");
+                
+                // If all stacks are gone, remove the effect entirely.
+                if (existingWound.Stacks <= 0)
+                {
+                    RemoveStatusEffect(StatusEffectType.Wound);
+                }
+                else
+                {
+                    // If stacks remain, we still need to notify the UI to update the count.
+                    OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+                }
+            }
+        }
+        // --- END OF NEW LOGIC ---
+
+        // The rest of the healing logic proceeds as normal.
         int finalHealAmount = healAmount;
 
-        // --- NEW HEALING DISRUPTION LOGIC ---
-        // Check for Blight first, as it's the most powerful effect.
         if (HasStatusEffect(StatusEffectType.Blight))
         {
             finalHealAmount = 0;
             Debug.Log($"<color=purple>{characterSheet.name} is Blighted and cannot be healed!</color>");
         }
-        // If not Blighted, then check for Mortal Wound. They do not stack.
         else if (HasStatusEffect(StatusEffectType.MortalWound))
         {
-            // Reduce healing by 50%
             finalHealAmount = Mathf.RoundToInt(finalHealAmount * 0.5f);
             Debug.Log($"<color=maroon>{characterSheet.name} has a Mortal Wound! Healing reduced to {finalHealAmount}.</color>");
         }
 
-        // If the heal amount was reduced to 0, no need to proceed further.
         if (finalHealAmount <= 0)
         {
-            // Still log a "healed for 0" message to make it clear why health didn't change.
             Debug.Log($"<color=green>{characterSheet.name} is healed for 0. New HP: {currentHealth}.</color>");
             return;
         }
-
+        
         currentHealth += finalHealAmount;
         currentHealth = Mathf.Min(currentHealth, (int)Stats.MaxHealth.Value);
 
@@ -443,8 +463,7 @@ public class Combatant : MonoBehaviour
                     break;
                 // --- ADD THIS CASE ---
                 case StatusEffectType.Bleed:
-                    // GDD: 20% of Max HP as True Damage
-                    int bleedDamage = Mathf.RoundToInt(Stats.MaxHealth.Value * 0.20f);
+                    int bleedDamage = Mathf.RoundToInt(Stats.MaxHealth.Value * 0.16f);
                     Debug.Log($"{characterSheet.name} is Bleeding heavily!");
                     TakeTrueDamage(bleedDamage);
                     break;
