@@ -8,7 +8,8 @@ public class Combatant : MonoBehaviour
 {
     public CharacterSheet characterSheet;
     public CharacterStats Stats { get; private set; }
-
+    [Header("Visuals")]
+    public GameObject targetIndicator;
     public int currentHealth;
     public int currentEnergy;
 
