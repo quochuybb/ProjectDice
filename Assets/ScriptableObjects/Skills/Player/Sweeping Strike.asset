@@ -10,32 +10,32 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
-  m_Name: Armor Break
+  m_Name: Sweeping Strike
   m_EditorClassIdentifier: 
-  skillName: Armor Break
+  skillName: Sweeping Strike
   description: 
   rarity: 1
-  element: 2
-  energyCost: 30
+  element: 0
+  energyCost: 35
   cooldown: 2
   effectType: 0
   targetType: 0
-  baseDamage: 0
-  mightRatio: 0
+  baseDamage: 20
+  mightRatio: 1.2
   baseHeal: 0
   intelligenceRatio: 0
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0
   appliesStatusEffect: 1
-  effectToApply: 17
-  effectClassification: 1
-  effectDuration: 1
-  stacksToApply: 1
-  statToModify: 6
-  modificationType: 1
-  modificationValue: 0.25
+  effectToApply: 0
+  effectClassification: 0
+  effectDuration: 0
+  stacksToApply: 0
+  statToModify: 0
+  modificationType: 0
+  modificationValue: 0
   doesCleanse: 0
   cleanseAmount: 0
   doesPurge: 0
   purgeAmount: 0
-  cleaveTargets: 0
+  cleaveTargets: 1

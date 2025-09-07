@@ -14,6 +14,11 @@ public class CombatManager : MonoBehaviour
 
     private List<Combatant> enemies = new List<Combatant>();
     private List<Combatant> turnOrder = new List<Combatant>();
+    public List<Combatant> GetValidEnemyTargets(Combatant primaryTarget)
+    {
+        // Return a list of all enemies that are alive and are not the primary target.
+        return enemies.Where(e => e != null && e.currentHealth > 0 && e != primaryTarget).ToList();
+    }
     private Combatant previouslyActiveCombatant;
     private Combatant currentTarget;
     private Skill selectedSkill;
@@ -115,18 +120,20 @@ public class CombatManager : MonoBehaviour
         combatUI.EnablePlayerActions();
     }
 
-    IEnumerator EnemyTurn(Combatant currentEnemy)
+    private IEnumerator EnemyTurn(Combatant currentEnemy)
     {
         Debug.Log($"--- {currentEnemy.characterSheet.name}'s TURN ---");
         combatUI.UpdateTargetHUD(currentEnemy);
         yield return new WaitForSeconds(1f);
 
+        // 1. Check for Turn-Skipping Effects
         if (currentEnemy.HasStatusEffect(StatusEffectType.Stun) || currentEnemy.HasStatusEffect(StatusEffectType.Freeze))
         {
             yield return StartCoroutine(ProcessSkippedTurn(currentEnemy));
             yield break;
         }
         
+        // 2. Start of Turn Phase
         currentEnemy.ProcessCleansingEffectsAtTurnStart();
         if (CheckGameState()) yield break;
 
@@ -137,25 +144,44 @@ public class CombatManager : MonoBehaviour
         currentEnemy.RegenerateEnergy();
         yield return new WaitForSeconds(1f);
 
+        // 3. Action Phase (AI Logic)
         var affordableSkills = currentEnemy.characterSheet.startingSkills
             .Where(s => s.energyCost <= currentEnemy.currentEnergy && !currentEnemy.IsSkillOnCooldown(s)).ToList();
 
         if (affordableSkills.Count > 0)
         {
             Skill skillToUse = affordableSkills[Random.Range(0, affordableSkills.Count)];
-            currentEnemy.UseSkill(skillToUse, playerCombatant);
+            
+            // Determine the correct target based on the skill's TargetType
+            Combatant finalTarget;
+            if (skillToUse.targetType == TargetType.Self)
+            {
+                // If the skill is meant for self-use, the target is the enemy itself.
+                finalTarget = currentEnemy;
+            }
+            else // It's an enemy-targeted skill
+            {
+                // If the skill is hostile, the target is the player.
+                finalTarget = playerCombatant;
+            }
+
+            // Use the skill on the correctly determined target.
+            currentEnemy.UseSkill(skillToUse, finalTarget);
         }
         else
         {
-            Debug.Log($"<color=orange>{currentEnemy.characterSheet.name} has no affordable actions.</color>");
+            Debug.Log($"<color=orange>{currentEnemy.characterSheet.name} has no affordable actions and passes its turn.</color>");
         }
 
         yield return new WaitForSeconds(1.5f);
+        
+        // 4. End of Turn Phase
         if (CheckGameState()) yield break;
 
         currentEnemy.TickDownStatusEffectsAtTurnEnd();
         yield return new WaitForSeconds(0.5f);
 
+        // 5. Advance to the next turn in the order
         AdvanceTurn();
     }
 

@@ -44,7 +44,7 @@ public class Skill : ScriptableObject
     public StatType statToModify;
     public StatModType modificationType;
     public float modificationValue;
-    
+
     [Header("Cleansing & Purging")]
     [Tooltip("Does this skill instantly remove debuffs?")]
     public bool doesCleanse;
@@ -53,4 +53,9 @@ public class Skill : ScriptableObject
     [Tooltip("Does this skill instantly remove buffs?")]
     public bool doesPurge;
     public int purgeAmount;
+    
+    [Header("Multi-Targeting")]
+    [Tooltip("Number of additional enemies hit by this skill (0 = no cleave).")]
+    [Range(0, 4)] // Max 4 additional targets to hit a full party of 5
+    public int cleaveTargets;
 }
