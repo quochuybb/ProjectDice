@@ -12,7 +12,6 @@ public class CombatUI : MonoBehaviour
     [SerializeField] private TMP_Text playerNameText;
     [SerializeField] private TMP_Text playerHealthText;
     [SerializeField] private TMP_Text playerStatsText;
-    [SerializeField] private TMP_Text playerInventoryText;
     [SerializeField] private TMP_Text playerStatusText;
 
     [Header("Target HUD")]
@@ -138,7 +137,7 @@ public class CombatUI : MonoBehaviour
                 sb.AppendLine($"<color={colorHex}>- {entry.Key.itemName}{stackText}</color>");
             }
         }
-        playerInventoryText.text = sb.ToString();
+        // playerInventoryText.text = sb.ToString();
     }
     
     public void ShowTargetingPrompt(bool show, string skillName = "")
