@@ -14,7 +14,9 @@ public class CombatManager : MonoBehaviour
 
     private List<Combatant> enemies = new List<Combatant>();
     private List<Combatant> turnOrder = new List<Combatant>();
+    private Combatant previouslyActiveCombatant;
     private Combatant currentTarget;
+    private Skill selectedSkill;
     private int currentTurnIndex = 0;
 
     void Start()
@@ -56,8 +58,22 @@ public class CombatManager : MonoBehaviour
     {
         if (CheckGameState()) return;
 
+        // --- HIDE the previous indicator ---
+        if (previouslyActiveCombatant != null && previouslyActiveCombatant.turnIndicator != null)
+        {
+            previouslyActiveCombatant.turnIndicator.SetActive(false);
+        }
+
         Combatant currentCombatant = turnOrder[currentTurnIndex];
         
+        // --- SHOW the new indicator ---
+        if (currentCombatant.turnIndicator != null)
+        {
+            currentCombatant.turnIndicator.SetActive(true);
+        }
+        // --- STORE the current combatant for the next turn ---
+        previouslyActiveCombatant = currentCombatant;
+
         if (currentCombatant.currentHealth <= 0)
         {
             AdvanceTurn();
@@ -75,6 +91,7 @@ public class CombatManager : MonoBehaviour
             StartCoroutine(EnemyTurn(currentCombatant));
         }
     }
+
 
     IEnumerator PlayerTurn()
     {
@@ -155,28 +172,67 @@ public class CombatManager : MonoBehaviour
 
     public void OnPlayerSkillSelection(Skill skill)
     {
-        if (state != CombatState.PLAYERTURN) return;
-        if (skill.targetType == TargetType.Enemy && currentTarget == null)
+        // You can only select a skill during your turn.
+        if (state != CombatState.PLAYERTURN)
         {
-            Debug.LogWarning("No target selected for an enemy-targeted skill!");
-            return;
+            // If you're already targeting, clicking a new skill cancels the old one.
+            if (state == CombatState.TARGETING)
+            {
+                Debug.Log($"Cancelled targeting with {selectedSkill.name}.");
+            }
+            else
+            {
+                return; // Not your turn, do nothing.
+            }
         }
-
-        state = CombatState.PROCESSING;
-        StartCoroutine(PlayerAttack(skill));
+        
+        // --- SKILL SELECTION LOGIC ---
+        if (skill.targetType == TargetType.Self)
+        {
+            // If the skill is self-targeted, we don't need to enter targeting mode.
+            // Execute it immediately.
+            state = CombatState.PROCESSING;
+            StartCoroutine(PlayerAttack(skill, playerCombatant));
+        }
+        else // The skill targets an enemy
+        {
+            // Enter targeting mode and store the selected skill.
+            state = CombatState.TARGETING;
+            selectedSkill = skill;
+            Debug.Log($"Selected skill: {selectedSkill.name}. Please choose a target.");
+            
+            // Optional: Update UI to show a "Select a Target" message.
+            combatUI.ShowTargetingPrompt(true, skill.skillName);
+        }
     }
 
-    IEnumerator PlayerAttack(Skill skill)
+    public void OnTargetSelected(Combatant target)
+    {
+        // You can only select a target when in the TARGETING state.
+        if (state != CombatState.TARGETING) return;
+        
+        // We have a skill and a target, proceed with the attack.
+        state = CombatState.PROCESSING;
+        combatUI.ShowTargetingPrompt(false); // Hide the prompt
+        StartCoroutine(PlayerAttack(selectedSkill, target));
+    }
+
+    IEnumerator PlayerAttack(Skill skill, Combatant target) // New parameter
     {
         combatUI.DisablePlayerActions();
-        Combatant finalTarget = (skill.targetType == TargetType.Enemy) ? currentTarget : playerCombatant;
-        playerCombatant.UseSkill(skill, finalTarget);
+        
+        // The target is now passed in directly.
+        playerCombatant.UseSkill(skill, target); 
         
         yield return new WaitForSeconds(1.5f);
 
-        if (currentTarget != null && currentTarget.currentHealth <= 0)
+        if (target != null && target.currentHealth <= 0)
         {
-            SetCurrentTarget(null);
+            // If the target of our attack died, deselect it.
+            if (currentTarget == target)
+            {
+                SetCurrentTarget(null);
+            }
         }
         
         if (CheckGameState()) yield break;
@@ -223,13 +279,28 @@ public class CombatManager : MonoBehaviour
     void EndCombat()
     {
         combatUI.DisablePlayerActions();
+        
+        // --- ADD THIS to clean up the UI ---
+        if (previouslyActiveCombatant != null && previouslyActiveCombatant.turnIndicator != null)
+        {
+            previouslyActiveCombatant.turnIndicator.SetActive(false);
+        }
+
         if (state == CombatState.WON) Debug.Log("<color=green>You Won!</color>");
         else if (state == CombatState.LOST) Debug.Log("<color=red>You Lost.</color>");
     }
     
     public void OnSkipTurnClicked()
     {
-        if (state != CombatState.PLAYERTURN) return;
+        if (state != CombatState.PLAYERTURN && state != CombatState.TARGETING) return;
+        
+        // If we were targeting, cancel it.
+        if (state == CombatState.TARGETING)
+        {
+            selectedSkill = null;
+            combatUI.ShowTargetingPrompt(false);
+        }
+
         state = CombatState.PROCESSING;
         StartCoroutine(SkipTurn());
     }

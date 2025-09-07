@@ -19,27 +19,29 @@ public class Targetable : MonoBehaviour
 
     private void OnMouseDown()
     {
-        if (combatManager != null && combatManager.state == CombatState.PLAYERTURN)
+        // The click now informs the CombatManager that a target has been chosen.
+        if (combatManager != null)
         {
-            combatManager.SetCurrentTarget(combatant);
+            // We no longer set the target here, we *confirm* the target.
+            combatManager.OnTargetSelected(combatant);
         }
     }
 
     private void OnMouseEnter()
     {
-        // Use the CombatUI singleton to update the hover information
-        if (CombatUI.Instance != null)
+        if (combatManager != null)
         {
-            CombatUI.Instance.UpdateTargetHUD(combatant);
+            combatManager.SetCurrentTarget(combatant);
         }
     }
 
     private void OnMouseExit()
     {
-        // Revert the HUD to show the currently selected target, not the hovered one
-        if (CombatUI.Instance != null && combatManager != null)
+        // When the mouse leaves, we revert the HUD to show no one.
+        // The "selected" target concept is now gone from the hover logic.
+        if (combatManager != null)
         {
-            CombatUI.Instance.UpdateTargetHUD(combatManager.GetCurrentTarget());
+            combatManager.SetCurrentTarget(null);
         }
     }
 }

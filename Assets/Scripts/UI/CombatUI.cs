@@ -22,6 +22,9 @@ public class CombatUI : MonoBehaviour
     [SerializeField] private TMP_Text targetStatsText;
     [SerializeField] private TMP_Text targetStatusText;
 
+    [Header("Prompts")]
+    [SerializeField] private TMP_Text targetingPromptText;
+
     [Header("Skill Bar")]
     [SerializeField] private Transform skillButtonContainer;
     [SerializeField] private GameObject skillButtonPrefab;
@@ -138,6 +141,19 @@ public class CombatUI : MonoBehaviour
         playerInventoryText.text = sb.ToString();
     }
     
+    public void ShowTargetingPrompt(bool show, string skillName = "")
+    {
+        if (show)
+        {
+            targetingPromptText.text = $"Use '{skillName}' on...";
+            targetingPromptText.gameObject.SetActive(true);
+        }
+        else
+        {
+            targetingPromptText.gameObject.SetActive(false);
+        }
+    }
+    
     // --- Helper Methods ---
     private string BuildStatsString(Combatant combatant)
     {
@@ -158,7 +174,7 @@ public class CombatUI : MonoBehaviour
         float energyBonus = stats.Energy.Value - stats.Energy.baseValue;
         if (energyBonus != 0) sb.Append(" (").Append(stats.Energy.baseValue).Append(energyBonus.ToString(" +0;-#")).Append(")");
         sb.AppendLine();
-        
+
         AppendStatLine("EN Regen", stats.EnergyRegen);
         AppendStatLine("Max HP", stats.MaxHealth);
         sb.AppendLine("-----------------");

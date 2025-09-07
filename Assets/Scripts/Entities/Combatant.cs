@@ -10,6 +10,7 @@ public class Combatant : MonoBehaviour
     public CharacterStats Stats { get; private set; }
     [Header("Visuals")]
     public GameObject targetIndicator;
+    public GameObject turnIndicator; 
     public int currentHealth;
     public int currentEnergy;
 
