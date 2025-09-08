@@ -55,8 +55,12 @@ public class Skill : ScriptableObject
     public int purgeAmount;
     
     [Header("Multi-Targeting")]
-    // --- RENAME this field from cleaveTargets to areaTargets ---
-    [Tooltip("Total number of enemies hit by this skill (1 = single target).")]
-    [Range(1, 4)] 
-    public int areaTargets = 1; // Default to 1 for single-target skills
+    [Tooltip("Total number of enemies hit by an Area skill (1 = single target).")]
+    [Range(1, 5)] 
+    public int areaTargets = 1;
+
+    // --- ADD THIS NEW FIELD ---
+    [Tooltip("Number of additional enemies hit by a Chain skill (0 = no chain).")]
+    [Range(0, 4)]
+    public int chainBounces = 0;
 }

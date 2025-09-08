@@ -120,26 +120,42 @@ public class Combatant : MonoBehaviour
     {
         List<Combatant> allTargets = new List<Combatant> { primaryTarget };
 
-        // Check if this is an area attack that needs more targets
+        // --- CASE 1: Area Attack ---
         if (skill.areaTargets > 1 && skill.targetType == TargetType.Enemy)
         {
-            // Calculate how many *additional* targets we need to find.
             int additionalTargetsNeeded = skill.areaTargets - 1;
-
-            // Get a list of all other valid enemies, sorted by distance (closest first).
             List<Combatant> secondaryTargets = combatManager.GetValidEnemyTargets(primaryTarget)
                 .OrderBy(e => (e.transform.position - primaryTarget.transform.position).sqrMagnitude)
                 .ToList();
             
-            // Determine how many we can actually take, respecting the edge case.
             int targetsToTake = Mathf.Min(additionalTargetsNeeded, secondaryTargets.Count);
-
-            // Add the closest enemies to our final target list.
             for (int i = 0; i < targetsToTake; i++)
             {
                 allTargets.Add(secondaryTargets[i]);
             }
         }
+        // --- CASE 2: Chain Attack ---
+        else if (skill.chainBounces > 0 && skill.targetType == TargetType.Enemy)
+        {
+            // For Chain, the secondary targets are completely random, not sorted by distance.
+            List<Combatant> secondaryTargets = combatManager.GetValidEnemyTargets(primaryTarget);
+            
+            int targetsToTake = Mathf.Min(skill.chainBounces, secondaryTargets.Count);
+            
+            // Randomly pick targets from the available list.
+            for (int i = 0; i < targetsToTake; i++)
+            {
+                // If there are no more potential targets, stop.
+                if (secondaryTargets.Count == 0) break;
+
+                int randomIndex = Random.Range(0, secondaryTargets.Count);
+                allTargets.Add(secondaryTargets[randomIndex]);
+                
+                // Remove the chosen target from the pool so it can't be hit again.
+                secondaryTargets.RemoveAt(randomIndex);
+            }
+        }
+        
         return allTargets;
     }
 
