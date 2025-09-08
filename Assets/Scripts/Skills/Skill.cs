@@ -53,14 +53,18 @@ public class Skill : ScriptableObject
     [Tooltip("Does this skill instantly remove buffs?")]
     public bool doesPurge;
     public int purgeAmount;
-    
+
     [Header("Multi-Targeting")]
     [Tooltip("Total number of enemies hit by an Area skill (1 = single target).")]
-    [Range(1, 5)] 
+    [Range(1, 5)]
     public int areaTargets = 1;
 
     // --- ADD THIS NEW FIELD ---
     [Tooltip("Number of additional enemies hit by a Chain skill (0 = no chain).")]
     [Range(0, 4)]
     public int chainBounces = 0;
+    
+    [Tooltip("Total number of hits delivered to random enemies (0 = not a random skill).")]
+    [Range(0, 10)]
+    public int randomHits = 0;
 }

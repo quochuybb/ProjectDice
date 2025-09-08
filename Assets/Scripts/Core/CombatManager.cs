@@ -14,9 +14,12 @@ public class CombatManager : MonoBehaviour
 
     private List<Combatant> enemies = new List<Combatant>();
     private List<Combatant> turnOrder = new List<Combatant>();
+    public List<Combatant> GetAllValidEnemyTargets()
+    {
+        return enemies.Where(e => e != null && e.currentHealth > 0).ToList();
+    }
     public List<Combatant> GetValidEnemyTargets(Combatant primaryTarget)
     {
-        // Return a list of all enemies that are alive and are not the primary target.
         return enemies.Where(e => e != null && e.currentHealth > 0 && e != primaryTarget).ToList();
     }
     private Combatant previouslyActiveCombatant;
@@ -198,36 +201,34 @@ public class CombatManager : MonoBehaviour
 
     public void OnPlayerSkillSelection(Skill skill)
     {
-        // You can only select a skill during your turn.
-        if (state != CombatState.PLAYERTURN)
+        if (state != CombatState.PLAYERTURN && state != CombatState.TARGETING) return;
+        
+        // --- NEW LOGIC FOR RANDOM SKILLS ---
+        if (skill.randomHits > 0)
         {
-            // If you're already targeting, clicking a new skill cancels the old one.
-            if (state == CombatState.TARGETING)
-            {
-                Debug.Log($"Cancelled targeting with {selectedSkill.name}.");
-            }
-            else
-            {
-                return; // Not your turn, do nothing.
-            }
+            // Random skills don't need a target. Execute immediately.
+            state = CombatState.PROCESSING;
+            // We can pass 'null' for the target as it won't be used.
+            StartCoroutine(PlayerAttack(skill, null)); 
+            return;
         }
         
-        // --- SKILL SELECTION LOGIC ---
+        // --- EXISTING LOGIC FOR OTHER SKILLS ---
+        if (state == CombatState.TARGETING)
+        {
+            Debug.Log($"Cancelled targeting with {selectedSkill.name}.");
+        }
+
         if (skill.targetType == TargetType.Self)
         {
-            // If the skill is self-targeted, we don't need to enter targeting mode.
-            // Execute it immediately.
             state = CombatState.PROCESSING;
             StartCoroutine(PlayerAttack(skill, playerCombatant));
         }
-        else // The skill targets an enemy
+        else
         {
-            // Enter targeting mode and store the selected skill.
             state = CombatState.TARGETING;
             selectedSkill = skill;
             Debug.Log($"Selected skill: {selectedSkill.name}. Please choose a target.");
-            
-            // Optional: Update UI to show a "Select a Target" message.
             combatUI.ShowTargetingPrompt(true, skill.skillName);
         }
     }

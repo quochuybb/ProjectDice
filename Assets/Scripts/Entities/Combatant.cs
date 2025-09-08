@@ -40,6 +40,7 @@ public class Combatant : MonoBehaviour
     // --- CORE SKILL METHOD ---
     public void UseSkill(Skill skill, Combatant primaryTarget)
     {
+        // --- Initial Checks (Cooldown & Energy) ---
         if (IsSkillOnCooldown(skill))
         {
             Debug.Log($"<color=orange>Cannot use {skill.name}, it's on cooldown.</color>");
@@ -55,44 +56,65 @@ public class Combatant : MonoBehaviour
             return;
         }
 
-        // --- HIT/MISS/DODGE CHECKS ---
-        if (skill.targetType == TargetType.Enemy)
+        // --- HIT/MISS/DODGE LOGIC (Only if there is a primary target) ---
+        if (skill.randomHits == 0 && skill.targetType == TargetType.Enemy)
         {
+            // This block will be skipped for Random(X) skills because primaryTarget will be null
+            // or for self-targeted skills.
+            if (primaryTarget == null)
+            {
+                Debug.LogError($"Skill '{skill.name}' requires a target, but none was provided!");
+                return;
+            }
+
             if (this.CheckForBlindMiss())
             {
-                // Attacker missed, consume energy and end.
                 ConsumeResources(finalEnergyCost, isEmpowered, skill);
                 return;
             }
             if (primaryTarget.CheckForDodge())
             {
-                // Defender dodged, consume energy and end.
                 Debug.Log($"{this.characterSheet.name}'s attack was dodged by {primaryTarget.characterSheet.name}!");
                 ConsumeResources(finalEnergyCost, isEmpowered, skill);
                 return;
             }
         }
         
-        // --- PROCEED WITH SKILL ---
+        // --- PROCEED WITH SKILL (This part is now safe for all skill types) ---
         ConsumeResources(finalEnergyCost, isEmpowered, skill);
         
+        // GatherTargets will correctly handle the null primaryTarget for Random skills.
         List<Combatant> allTargets = GatherTargets(skill, primaryTarget);
         
+        // Check if a random skill found any targets. If not, fizzle.
+        if (allTargets.Count == 0)
+        {
+            Debug.Log($"{characterSheet.name} uses {skill.skillName}, but finds no valid targets!");
+            return;
+        }
+
         Debug.Log($"{characterSheet.name} uses {skill.skillName}, targeting {allTargets.Count} creature(s)!");
 
-        // Apply effects to all targets
+        // --- APPLY EFFECTS ---
         bool powerUpConsumed = HasStatusEffect(StatusEffectType.PowerUp);
         bool weakenConsumed = HasStatusEffect(StatusEffectType.Weaken);
 
         foreach (Combatant target in allTargets)
         {
+            // For Random skills, we should check for dodge on each individual hit.
+            if (skill.randomHits > 0 && target.CheckForDodge())
+            {
+                Debug.Log($"{this.characterSheet.name}'s random hit was dodged by {target.characterSheet.name}!");
+                continue; // Skip this target and move to the next hit
+            }
+            
             ApplyPrimaryEffect(skill, target, powerUpConsumed, weakenConsumed);
             if (skill.appliesStatusEffect) ApplySkillStatusEffect(skill, target);
+            // Cleanse/Purge are less common on random skills, but we can leave the logic.
             if (skill.doesCleanse) target.CleanseDebuffs(skill.cleanseAmount);
             if (skill.doesPurge) target.PurgeBuffs(skill.purgeAmount);
         }
 
-        // Consume one-time buffs after they have been applied to all targets
         if (powerUpConsumed) RemoveStatusEffect(StatusEffectType.PowerUp);
         if (weakenConsumed) RemoveStatusEffect(StatusEffectType.Weaken);
     }
@@ -118,11 +140,28 @@ public class Combatant : MonoBehaviour
 
     private List<Combatant> GatherTargets(Skill skill, Combatant primaryTarget)
     {
-        List<Combatant> allTargets = new List<Combatant> { primaryTarget };
-
-        // --- CASE 1: Area Attack ---
-        if (skill.areaTargets > 1 && skill.targetType == TargetType.Enemy)
+        List<Combatant> allTargets = new List<Combatant>();
+        
+        // --- NEW: CASE 3: Random Hits ---
+        if (skill.randomHits > 0)
         {
+            // Get all possible enemies.
+            List<Combatant> possibleTargets = combatManager.GetAllValidEnemyTargets();
+            
+            // If there are no enemies, return an empty list to prevent errors.
+            if (possibleTargets.Count == 0) return allTargets;
+
+            // Add X random targets to the list. The same enemy can be added multiple times.
+            for (int i = 0; i < skill.randomHits; i++)
+            {
+                int randomIndex = Random.Range(0, possibleTargets.Count);
+                allTargets.Add(possibleTargets[randomIndex]);
+            }
+        }
+        // --- CASE 1: Area Attack ---
+        else if (skill.areaTargets > 1 && skill.targetType == TargetType.Enemy)
+        {
+            allTargets.Add(primaryTarget);
             int additionalTargetsNeeded = skill.areaTargets - 1;
             List<Combatant> secondaryTargets = combatManager.GetValidEnemyTargets(primaryTarget)
                 .OrderBy(e => (e.transform.position - primaryTarget.transform.position).sqrMagnitude)
@@ -137,28 +176,25 @@ public class Combatant : MonoBehaviour
         // --- CASE 2: Chain Attack ---
         else if (skill.chainBounces > 0 && skill.targetType == TargetType.Enemy)
         {
-            // For Chain, the secondary targets are completely random, not sorted by distance.
+            allTargets.Add(primaryTarget);
             List<Combatant> secondaryTargets = combatManager.GetValidEnemyTargets(primaryTarget);
-            
             int targetsToTake = Mathf.Min(skill.chainBounces, secondaryTargets.Count);
-            
-            // Randomly pick targets from the available list.
             for (int i = 0; i < targetsToTake; i++)
             {
-                // If there are no more potential targets, stop.
                 if (secondaryTargets.Count == 0) break;
-
                 int randomIndex = Random.Range(0, secondaryTargets.Count);
                 allTargets.Add(secondaryTargets[randomIndex]);
-                
-                // Remove the chosen target from the pool so it can't be hit again.
                 secondaryTargets.RemoveAt(randomIndex);
             }
+        }
+        // --- DEFAULT: Single Target ---
+        else
+        {
+            allTargets.Add(primaryTarget);
         }
         
         return allTargets;
     }
-
     private void ApplyPrimaryEffect(Skill skill, Combatant target, bool isPoweredUp, bool isWeakened)
     {
         switch (skill.effectType)
