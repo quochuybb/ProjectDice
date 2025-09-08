@@ -102,7 +102,7 @@ GameObject:
   - component: {fileID: 6525942930550917897}
   - component: {fileID: 3317973857148538972}
   m_Layer: 0
-  m_Name: Slime
+  m_Name: Goblin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -169,7 +169,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -3467732301070568998, guid: e7d77189b669c43d38934a3cce5e05b5, type: 3}
+  m_Sprite: {fileID: 780816626887372113, guid: e7d77189b669c43d38934a3cce5e05b5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -192,7 +192,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8f0a8d2c268e794ab8e41c2f6f73831, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  characterSheet: {fileID: 11400000, guid: 5739b8b4cf56c6944a1f059e63d94c2e, type: 2}
+  characterSheet: {fileID: 11400000, guid: da8a2cb75df38bc49a1e9ffc627deb06, type: 2}
   targetIndicator: {fileID: 6205568107069260072}
   turnIndicator: {fileID: 9126846744259156578}
   currentHealth: 0
@@ -248,7 +248,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1.75, y: 1.5}
+    oldSize: {x: 2, y: 2}
     newSize: {x: 1.75, y: 1.5}
     adaptiveTilingThreshold: 0.5
     drawMode: 0

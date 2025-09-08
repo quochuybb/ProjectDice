@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 23b6dddebccec214ab7b3f6099197f06, type: 3}
-  m_Name: Slime
+  m_Name: Goblin
   m_EditorClassIdentifier: 
-  characterName: Slime
-  characterSprite: {fileID: 2326333024471168493, guid: 97ba893235bb5b663a32f7b7be751304, type: 3}
-  maxHealth: 60
-  energy: 50
-  energyRegen: 50
-  might: 10
+  characterName: Goblin
+  characterSprite: {fileID: 780816626887372113, guid: e7d77189b669c43d38934a3cce5e05b5, type: 3}
+  maxHealth: 50
+  energy: 40
+  energyRegen: 30
+  might: 15
   intelligence: 5
-  armor: 10
-  speed: 10
-  grit: 10
+  armor: 8
+  speed: 5
+  grit: 6
   luck: 0
   growth: 0
   startingSkills:
@@ -37,15 +37,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f6e0d39a353fce24599e7dd4c294657b, type: 2}
   - {fileID: 11400000, guid: c2909efea5e950e4993d04325e212294, type: 2}
   - {fileID: 11400000, guid: f8394520345eb564b9aa9e4447f4cd27, type: 2}
-  - {fileID: 11400000, guid: ab7a35fd2785bf242b05f82e9343e20c, type: 2}
-  - {fileID: 11400000, guid: 096d6c761c1f1f94cbee88b78faf4d1d, type: 2}
-  - {fileID: 11400000, guid: 850510034272dc7458a75f8994d606cf, type: 2}
-  - {fileID: 11400000, guid: 34899e7896a9cf4468f80c1ee9d3fb16, type: 2}
-  - {fileID: 11400000, guid: 47d889b3608702248bf87ba3ca66b83c, type: 2}
-  - {fileID: 11400000, guid: 081e4068874e6af4f9a19a235a4129f4, type: 2}
-  - {fileID: 11400000, guid: f3f269b7a71e93247ba3c3acbed1b436, type: 2}
-  - {fileID: 11400000, guid: 9b6a61cd12ef50c48af6850e9ae608bc, type: 2}
-  - {fileID: 11400000, guid: bb06bf299a0504c49900dad71d3a544d, type: 2}
-  - {fileID: 11400000, guid: b4265d5a7c9fcfb4b9a14b0b94b62593, type: 2}
-  - {fileID: 11400000, guid: d598d1b9df88d6a4a9055f7c68660e9b, type: 2}
-  - {fileID: 11400000, guid: 3114bcb7487dd92499a089133309ac6a, type: 2}
+  - {fileID: 11400000, guid: 2def948ea4484934ab65755f067d5ac3, type: 2}

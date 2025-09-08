@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
   m_Name: Pepper Spray
   m_EditorClassIdentifier: 
-  skillName: 
+  skillName: Pepper Spray
   description: 
   rarity: 0
-  element: 0
-  energyCost: 0
+  element: 5
+  energyCost: 20
   cooldown: 0
   effectType: 0
   targetType: 0
@@ -26,10 +26,10 @@ MonoBehaviour:
   intelligenceRatio: 0
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0
-  appliesStatusEffect: 0
-  effectToApply: 0
-  effectClassification: 0
-  effectDuration: 0
+  appliesStatusEffect: 1
+  effectToApply: 10
+  effectClassification: 1
+  effectDuration: 1
   stacksToApply: 1
   statToModify: 0
   modificationType: 0

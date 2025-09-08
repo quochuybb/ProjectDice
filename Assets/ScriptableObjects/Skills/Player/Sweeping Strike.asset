@@ -38,4 +38,4 @@ MonoBehaviour:
   cleanseAmount: 0
   doesPurge: 0
   purgeAmount: 0
-  cleaveTargets: 1
+  cleaveTargets: 2
