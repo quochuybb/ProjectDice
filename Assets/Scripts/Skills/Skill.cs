@@ -55,7 +55,8 @@ public class Skill : ScriptableObject
     public int purgeAmount;
     
     [Header("Multi-Targeting")]
-    [Tooltip("Number of additional enemies hit by this skill (0 = no cleave).")]
-    [Range(0, 4)] // Max 4 additional targets to hit a full party of 5
-    public int cleaveTargets;
+    // --- RENAME this field from cleaveTargets to areaTargets ---
+    [Tooltip("Total number of enemies hit by this skill (1 = single target).")]
+    [Range(1, 4)] 
+    public int areaTargets = 1; // Default to 1 for single-target skills
 }

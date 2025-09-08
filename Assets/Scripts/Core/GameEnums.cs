@@ -54,7 +54,6 @@ public enum StatusEffectType
     Weaken,
     Stun,
     Freeze,
-    Blind,
     Poison,
     MortalWound,
     Blight,
@@ -66,7 +65,8 @@ public enum StatusEffectType
     Purification,
     Unraveling,
     Immunity,
-    Ethereal
+    Ethereal,
+    Blind
 }
 
 public enum EffectClassification

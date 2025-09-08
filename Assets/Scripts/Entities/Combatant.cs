@@ -119,13 +119,22 @@ public class Combatant : MonoBehaviour
     private List<Combatant> GatherTargets(Skill skill, Combatant primaryTarget)
     {
         List<Combatant> allTargets = new List<Combatant> { primaryTarget };
-        if (skill.cleaveTargets > 0 && skill.targetType == TargetType.Enemy)
+
+        // Check if this is an area attack that needs more targets
+        if (skill.areaTargets > 1 && skill.targetType == TargetType.Enemy)
         {
+            // Calculate how many *additional* targets we need to find.
+            int additionalTargetsNeeded = skill.areaTargets - 1;
+
+            // Get a list of all other valid enemies, sorted by distance (closest first).
             List<Combatant> secondaryTargets = combatManager.GetValidEnemyTargets(primaryTarget)
                 .OrderBy(e => (e.transform.position - primaryTarget.transform.position).sqrMagnitude)
                 .ToList();
             
-            int targetsToTake = Mathf.Min(skill.cleaveTargets, secondaryTargets.Count);
+            // Determine how many we can actually take, respecting the edge case.
+            int targetsToTake = Mathf.Min(additionalTargetsNeeded, secondaryTargets.Count);
+
+            // Add the closest enemies to our final target list.
             for (int i = 0; i < targetsToTake; i++)
             {
                 allTargets.Add(secondaryTargets[i]);
@@ -169,7 +178,7 @@ public class Combatant : MonoBehaviour
         if (HasStatusEffect(StatusEffectType.Blind))
         {
             RemoveStatusEffect(StatusEffectType.Blind);
-            if (Random.value < 0.5f)
+            if (Random.value < 0.7f)
             {
                 Debug.Log($"<color=brown>{characterSheet.name}'s attack missed due to Blind!</color>");
                 return true;

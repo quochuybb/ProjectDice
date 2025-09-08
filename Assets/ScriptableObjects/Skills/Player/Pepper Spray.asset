@@ -27,7 +27,7 @@ MonoBehaviour:
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0
   appliesStatusEffect: 1
-  effectToApply: 10
+  effectToApply: 22
   effectClassification: 1
   effectDuration: 1
   stacksToApply: 1
@@ -38,4 +38,4 @@ MonoBehaviour:
   cleanseAmount: 0
   doesPurge: 0
   purgeAmount: 0
-  cleaveTargets: 0
+  areaTargets: 1
