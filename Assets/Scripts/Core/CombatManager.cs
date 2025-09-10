@@ -148,47 +148,41 @@ public class CombatManager : MonoBehaviour
         yield return new WaitForSeconds(1f);
 
         // 3. Action Phase (AI Logic)
-        var affordableSkills = currentEnemy.characterSheet.startingSkills
-            .Where(s => s.energyCost <= currentEnemy.currentEnergy && !currentEnemy.IsSkillOnCooldown(s)).ToList();
+    var affordableSkills = currentEnemy.characterSheet.startingSkills
+        .Where(s => s.energyCost <= currentEnemy.currentEnergy && !currentEnemy.IsSkillOnCooldown(s)).ToList();
 
-        if (affordableSkills.Count > 0)
+    if (affordableSkills.Count > 0)
+    {
+        Skill skillToUse = affordableSkills[Random.Range(0, affordableSkills.Count)];
+        
+        Combatant primaryTarget;
+
+        // --- NEW, SIMPLIFIED AI TARGETING ---
+        // Random skills don't need a primary target.
+        if (skillToUse.randomHits > 0)
         {
-            Skill skillToUse = affordableSkills[Random.Range(0, affordableSkills.Count)];
-            
-            Combatant primaryTarget;
-
-            // --- NEW, SMARTER AI TARGETING LOGIC ---
-            if (skillToUse.effectType == SkillEffectType.Healing)
-            {
-                // If it's a healing skill, find the most wounded ally (or self) to target.
-                // We start with the caster as the default target.
-                primaryTarget = currentEnemy;
-                int lowestHealth = currentEnemy.currentHealth;
-
-                // Check all allies to see if any are more wounded.
-                foreach (Combatant ally in GetValidAllyTargets(currentEnemy))
-                {
-                    if (ally.currentHealth < lowestHealth)
-                    {
-                        lowestHealth = ally.currentHealth;
-                        primaryTarget = ally;
-                    }
-                }
-                // Now, primaryTarget is the most damaged enemy on their team.
-            }
-            else // It's a Damage skill or other hostile effect.
-            {
-                // Target the player.
-                primaryTarget = playerCombatant;
-            }
-
-            // Use the skill on the correctly determined primary target.
-            currentEnemy.UseSkill(skillToUse, primaryTarget);
+            primaryTarget = null;
         }
-        else
+        // Friendly skills (Healing or Self-targeted buffs) should target an ally or self.
+        else if (skillToUse.effectType == SkillEffectType.Healing || skillToUse.targetType == TargetType.Self)
         {
-            Debug.Log($"<color=orange>{currentEnemy.characterSheet.name} has no affordable actions and passes its turn.</color>");
+            // For now, the AI will just target itself with friendly skills.
+            // This is simple, predictable, and prevents healing the player.
+            primaryTarget = currentEnemy;
         }
+        else // It's a hostile, single-target skill.
+        {
+            // Target the player.
+            primaryTarget = playerCombatant;
+        }
+
+        // Use the skill on the correctly determined primary target.
+        currentEnemy.UseSkill(skillToUse, primaryTarget);
+    }
+    else
+    {
+        Debug.Log($"<color=orange>{currentEnemy.characterSheet.name} has no affordable actions and passes its turn.</color>");
+    }
 
         yield return new WaitForSeconds(1.5f);
 

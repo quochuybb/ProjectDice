@@ -151,74 +151,84 @@ public class Combatant : MonoBehaviour
         }
     }
 
-    private List<Combatant> GatherTargets(Skill skill, Combatant primaryTarget)
+private List<Combatant> GatherTargets(Skill skill, Combatant primaryTarget)
+{
+    List<Combatant> allTargets = new List<Combatant>();
+
+    // Case 1: Random Hits (Logic completely rewritten)
+    if (skill.randomHits > 0)
     {
-        List<Combatant> allTargets = new List<Combatant>();
-
-        // Case 1: Random Hits (now correctly targets hostiles)
-        if (skill.randomHits > 0)
+        List<Combatant> possibleTargets;
+        
+        // --- THE FIX: Check the skill's EFFECT TYPE to determine the target pool ---
+        if (skill.effectType == SkillEffectType.Healing)
         {
-            // Get all targets that are hostile to 'this' combatant.
-            List<Combatant> possibleTargets = combatManager.GetHostileTargets(this);
-            if (possibleTargets.Count == 0) return allTargets;
-
-            for (int i = 0; i < skill.randomHits; i++)
-            {
-                allTargets.Add(possibleTargets[Random.Range(0, possibleTargets.Count)]);
-            }
+            // If it's a healing skill, the pool is the caster and all their allies.
+            possibleTargets = combatManager.GetValidAllyTargets(this);
+            possibleTargets.Add(this); // Add self to the pool of potential heal targets
         }
-        // Case 2: Area Attack
-        else if (skill.areaTargets > 1)
+        else // It's a damaging or debuffing random skill
         {
-            allTargets.Add(primaryTarget);
-            int additionalTargetsNeeded = skill.areaTargets - 1;
+            // The pool is all targets hostile to the caster.
+            possibleTargets = combatManager.GetHostileTargets(this);
+        }
 
-            // --- THE FIX: Get allies OR enemies based on target type ---
-            List<Combatant> secondaryPool;
-            if (skill.targetType == TargetType.Enemy)
-            {
-                // If it's a hostile AoE, get other hostile targets.
-                secondaryPool = combatManager.GetHostileTargets(this).Where(t => t != primaryTarget).ToList();
-            }
-            else // TargetType.Self (interpreted as "Friendly")
-            {
-                // If it's a friendly AoE, get other friendly targets.
-                secondaryPool = combatManager.GetValidAllyTargets(this);
-            }
-            
-            // This sorting now works for both hostile and friendly AoEs
-            secondaryPool = secondaryPool.OrderBy(e => (e.transform.position - primaryTarget.transform.position).sqrMagnitude).ToList();
-            
-            int targetsToTake = Mathf.Min(additionalTargetsNeeded, secondaryPool.Count);
-            for (int i = 0; i < targetsToTake; i++)
-            {
-                allTargets.Add(secondaryPool[i]);
-            }
-        }
-        // Case 3: Chain Attack (now correctly targets hostiles)
-        else if (skill.chainBounces > 0 && skill.targetType == TargetType.Enemy)
+        if (possibleTargets.Count == 0) return allTargets;
+
+        for (int i = 0; i < skill.randomHits; i++)
         {
-            allTargets.Add(primaryTarget);
-            // Get other hostile targets to bounce to.
-            List<Combatant> secondaryTargets = combatManager.GetHostileTargets(this).Where(t => t != primaryTarget).ToList();
-            
-            int targetsToTake = Mathf.Min(skill.chainBounces, secondaryTargets.Count);
-            for (int i = 0; i < targetsToTake; i++)
-            {
-                if (secondaryTargets.Count == 0) break;
-                int randomIndex = Random.Range(0, secondaryTargets.Count);
-                allTargets.Add(secondaryTargets[randomIndex]);
-                secondaryTargets.RemoveAt(randomIndex);
-            }
+            allTargets.Add(possibleTargets[Random.Range(0, possibleTargets.Count)]);
         }
-        // Default: Single Target
+    }
+    // Case 2: Area Attack
+    else if (skill.areaTargets > 1)
+    {
+        // This logic is already correct and team-aware. No changes needed.
+        allTargets.Add(primaryTarget);
+        int additionalTargetsNeeded = skill.areaTargets - 1;
+        List<Combatant> secondaryPool;
+        if (skill.targetType == TargetType.Enemy)
+        {
+            secondaryPool = combatManager.GetHostileTargets(this).Where(t => t != primaryTarget).ToList();
+        }
         else
         {
+            secondaryPool = combatManager.GetValidAllyTargets(this);
+        }
+        secondaryPool = secondaryPool.OrderBy(e => (e.transform.position - primaryTarget.transform.position).sqrMagnitude).ToList();
+        int targetsToTake = Mathf.Min(additionalTargetsNeeded, secondaryPool.Count);
+        for (int i = 0; i < targetsToTake; i++)
+        {
+            allTargets.Add(secondaryPool[i]);
+        }
+    }
+    // Case 3: Chain Attack
+    else if (skill.chainBounces > 0 && skill.targetType == TargetType.Enemy)
+    {
+        // This logic is already correct. No changes needed.
+        allTargets.Add(primaryTarget);
+        List<Combatant> secondaryTargets = combatManager.GetHostileTargets(this).Where(t => t != primaryTarget).ToList();
+        int targetsToTake = Mathf.Min(skill.chainBounces, secondaryTargets.Count);
+        for (int i = 0; i < targetsToTake; i++)
+        {
+            if (secondaryTargets.Count == 0) break;
+            int randomIndex = Random.Range(0, secondaryTargets.Count);
+            allTargets.Add(secondaryTargets[randomIndex]);
+            secondaryTargets.RemoveAt(randomIndex);
+        }
+    }
+    // Default: Single Target
+    else
+    {
+        // This can happen if primaryTarget is null for a Random skill, so we need to guard it.
+        if (primaryTarget != null)
+        {
             allTargets.Add(primaryTarget);
         }
-        
-        return allTargets;
     }
+    
+    return allTargets;
+}
 
     private void ApplyPrimaryEffect(Skill skill, Combatant target, bool isPoweredUp, bool isWeakened)
     {
@@ -287,8 +297,6 @@ public class Combatant : MonoBehaviour
         return false;
     }
     
-    // ... [ The rest of the script (TakeDamage, ReceiveHeal, ApplyStatusEffect, etc.) is exactly as you provided, which is correct. ] ...
-    #region Unchanged Methods
     public void RegenerateEnergy()
     {
         int regenAmount = (int)Stats.EnergyRegen.Value;
@@ -601,5 +609,5 @@ public class Combatant : MonoBehaviour
             default: return null;
         }
     }
-    #endregion
+
 }
