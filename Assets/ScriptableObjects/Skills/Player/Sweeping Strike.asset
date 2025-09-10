@@ -26,7 +26,7 @@ MonoBehaviour:
   intelligenceRatio: 0
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0
-  appliesStatusEffect: 1
+  appliesStatusEffect: 0
   effectToApply: 0
   effectClassification: 0
   effectDuration: 0
@@ -39,3 +39,5 @@ MonoBehaviour:
   doesPurge: 0
   purgeAmount: 0
   areaTargets: 3
+  chainBounces: 0
+  randomHits: 0

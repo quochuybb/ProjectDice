@@ -19,7 +19,7 @@ MonoBehaviour:
   energyCost: 40
   cooldown: 2
   effectType: 1
-  targetType: 0
+  targetType: 1
   baseDamage: 0
   mightRatio: 0
   baseHeal: 10
@@ -40,4 +40,4 @@ MonoBehaviour:
   purgeAmount: 0
   areaTargets: 1
   chainBounces: 0
-  randomHits: 2
+  randomHits: 5
