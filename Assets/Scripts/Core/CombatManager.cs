@@ -105,6 +105,13 @@ public class CombatManager : MonoBehaviour
     {
         Debug.Log("--- PLAYER'S TURN ---");
         SetCurrentTarget(currentTarget);
+        playerCombatant.ProcessCleansingEffectsAtTurnStart();
+        if (CheckGameState()) yield break;
+        
+        playerCombatant.ProcessDoTsAndHoTs();
+        if (CheckGameState()) yield break;
+
+        
 
         if (playerCombatant.HasStatusEffect(StatusEffectType.Ethereal) || playerCombatant.HasStatusEffect(StatusEffectType.Stun) || playerCombatant.HasStatusEffect(StatusEffectType.Freeze))
         {
@@ -112,11 +119,6 @@ public class CombatManager : MonoBehaviour
             yield break;
         }
 
-        playerCombatant.ProcessCleansingEffectsAtTurnStart();
-        if (CheckGameState()) yield break;
-
-        playerCombatant.ProcessDoTsAndHoTs();
-        if (CheckGameState()) yield break;
 
         playerCombatant.TickDownCooldowns();
         playerCombatant.RegenerateEnergy();
@@ -128,7 +130,11 @@ public class CombatManager : MonoBehaviour
         Debug.Log($"--- {currentEnemy.characterSheet.name}'s TURN ---");
         combatUI.UpdateTargetHUD(currentEnemy);
         yield return new WaitForSeconds(1f);
+        currentEnemy.ProcessCleansingEffectsAtTurnStart();
+        if (CheckGameState()) yield break;
 
+        currentEnemy.ProcessDoTsAndHoTs();
+        if (CheckGameState()) yield break;
         // 1. Check for Turn-Skipping Effects
         if (currentEnemy.HasStatusEffect(StatusEffectType.Stun) || currentEnemy.HasStatusEffect(StatusEffectType.Freeze))
         {
@@ -137,11 +143,7 @@ public class CombatManager : MonoBehaviour
         }
 
         // 2. Start of Turn Phase
-        currentEnemy.ProcessCleansingEffectsAtTurnStart();
-        if (CheckGameState()) yield break;
 
-        currentEnemy.ProcessDoTsAndHoTs();
-        if (CheckGameState()) yield break;
 
         currentEnemy.TickDownCooldowns();
         currentEnemy.RegenerateEnergy();

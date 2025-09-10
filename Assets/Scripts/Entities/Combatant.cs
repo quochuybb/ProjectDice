@@ -366,74 +366,125 @@ private List<Combatant> GatherTargets(Skill skill, Combatant primaryTarget)
 
     public bool HasStatusEffect(StatusEffectType type) => activeStatusEffects.Any(effect => effect.Type == type);
 
-    public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourceSkill)
+public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourceSkill)
+{
+    // --- GATE 1: IMMUNITY CHECK ---
+    // First, check if the target is immune to incoming debuffs.
+    if ((HasStatusEffect(StatusEffectType.Immunity) || HasStatusEffect(StatusEffectType.Ethereal)) && 
+        effect.Classification == EffectClassification.Debuff)
     {
-        if ((HasStatusEffect(StatusEffectType.Immunity) || HasStatusEffect(StatusEffectType.Ethereal)) && effect.Classification == EffectClassification.Debuff)
+        Debug.Log($"<color=yellow>{characterSheet.name} is Immune and resists the {effect.Type} debuff!</color>");
+        return;
+    }
+
+    // --- GATE 2: DURATION REFRESH (for non-stacking effects) ---
+    // If an effect of the same type already exists, refresh its duration instead of adding a duplicate.
+    // We exclude Wound because it has its own special stacking logic.
+    if (effect.Type != StatusEffectType.Wound)
+    {
+        StatusEffect existingEffect = activeStatusEffects.FirstOrDefault(e => e.Type == effect.Type);
+        if (existingEffect != null)
         {
-            Debug.Log($"<color=yellow>{characterSheet.name} is Immune and resists the {effect.Type} debuff!</color>");
+            Debug.Log($"Refreshing duration for {effect.Type}. Old: {existingEffect.Duration}, New: {effect.Duration}");
+            
+            // Only update if the new duration is longer.
+            if (effect.Duration > existingEffect.Duration)
+            {
+                existingEffect.Duration = effect.Duration;
+            }
+            
+            // The effect is refreshed, so we must protect it from expiring on the same turn it was refreshed.
+            existingEffect.IsNewlyApplied = true;
+
+            // Notify the UI that an effect has been updated.
+            OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+            return; // Exit the method since we've handled this effect.
+        }
+    }
+
+    // --- GATE 3: RESISTANCE CHECK ---
+    // Check for Grit resistance against Stun and Freeze.
+    if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
+    {
+        float grit = Stats.Grit.Value;
+        float resistChance = (grit / (grit + 100f)) * 0.5f;
+        if (Random.value < resistChance)
+        {
+            Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
             return;
         }
-
-        if (effect.Type == StatusEffectType.Wound)
-        {
-            StatusEffect existingWound = activeStatusEffects.FirstOrDefault(e => e.Type == StatusEffectType.Wound);
-            if (existingWound != null)
-            {
-                existingWound.Stacks += effect.Stacks;
-                Debug.Log($"<color=red>{characterSheet.name} gains {effect.Stacks} Wound stacks! (Total: {existingWound.Stacks})</color>");
-                CheckForBleed(existingWound, caster, sourceSkill);
-                OnStatusEffectsChanged?.Invoke(activeStatusEffects);
-                return;
-            }
-            else
-            {
-                effect.Duration = 99;
-            }
-        }
-        if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
-        {
-            float grit = Stats.Grit.Value;
-            float resistChance = (grit / (grit + 100f)) * 0.5f;
-            if (Random.value < resistChance)
-            {
-                Debug.Log($"<color=yellow>{characterSheet.name} resisted the {effect.Type} effect!</color>");
-                return;
-            }
-        }
-        if (effect.Type == StatusEffectType.StatUp || effect.Type == StatusEffectType.StatDown)
-        {
-            Stat targetStat = GetStat(effect.TargetStat);
-            if (targetStat != null)
-            {
-                float value = (effect.Type == StatusEffectType.StatUp) ? effect.ModValue : -effect.ModValue;
-                var modifier = new StatModifier(value, effect.ModType, effect);
-                targetStat.AddModifier(modifier);
-            }
-        }
-        if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison))
-        {
-            effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
-        }
-
-        activeStatusEffects.Add(effect);
-
-        if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
-        {
-            effect.IsNewlyApplied = false;
-        }
-        Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
-        if (effect.Type == StatusEffectType.Freeze)
-        {
-            var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
-            ApplyStatusEffect(vulnerableDebuff, caster, null);
-        }
-        if (effect.Type == StatusEffectType.Fortify)
-        {
-            StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
-            Stats.Armor.AddModifier(armorBuff);
-        }
-        OnStatusEffectsChanged?.Invoke(activeStatusEffects);
     }
+
+    // --- SPECIAL CASE LOGIC (for effects that need it) ---
+
+    // Handle Wound stacking.
+    if (effect.Type == StatusEffectType.Wound)
+    {
+        StatusEffect existingWound = activeStatusEffects.FirstOrDefault(e => e.Type == StatusEffectType.Wound);
+        if (existingWound != null)
+        {
+            existingWound.Stacks += effect.Stacks;
+            Debug.Log($"<color=red>{characterSheet.name} gains {effect.Stacks} Wound stacks! (Total: {existingWound.Stacks})</color>");
+            CheckForBleed(existingWound, caster, sourceSkill);
+            OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+            return; // Exit here to prevent adding a duplicate Wound effect.
+        }
+        else
+        {
+            effect.Duration = 99; // Wounds are persistent counters.
+        }
+    }
+
+    // Calculate TickValue for DoTs and HoTs.
+    if (sourceSkill != null && (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison))
+    {
+        effect.TickValue = sourceSkill.baseDotHotValue + (int)(caster.Stats.Intelligence.Value * sourceSkill.dotHotIntelligenceRatio);
+    }
+
+    // Apply the StatModifier for StatUp/StatDown effects.
+    if (effect.Type == StatusEffectType.StatUp || effect.Type == StatusEffectType.StatDown)
+    {
+        Stat targetStat = GetStat(effect.TargetStat);
+        if (targetStat != null)
+        {
+            float value = (effect.Type == StatusEffectType.StatUp) ? effect.ModValue : -effect.ModValue;
+            var modifier = new StatModifier(value, effect.ModType, effect);
+            targetStat.AddModifier(modifier);
+        }
+    }
+    
+    // --- FINAL APPLICATION ---
+    
+    // Add the fully configured effect to the active list.
+    activeStatusEffects.Add(effect);
+
+    // Exempt Stun/Freeze from the 'IsNewlyApplied' protection so they expire correctly.
+    if (effect.Type == StatusEffectType.Stun || effect.Type == StatusEffectType.Freeze)
+    {
+        effect.IsNewlyApplied = false;
+    }
+    
+    Debug.Log($"<color=lightblue>{characterSheet.name} gained {effect.Type} for {effect.Duration} turn(s).</color>");
+
+    // --- TRIGGERED SUB-EFFECTS ---
+
+    // Freeze also applies a 1-turn Vulnerable.
+    if (effect.Type == StatusEffectType.Freeze)
+    {
+        var vulnerableDebuff = new StatusEffect(StatusEffectType.Vulnerable, 1, EffectClassification.Debuff);
+        ApplyStatusEffect(vulnerableDebuff, caster, null); // Recursively call this method for the sub-effect.
+    }
+
+    // Fortify also applies its armor buff.
+    if (effect.Type == StatusEffectType.Fortify)
+    {
+        StatModifier armorBuff = new StatModifier(150, StatModType.Flat, effect);
+        Stats.Armor.AddModifier(armorBuff);
+    }
+    
+    // Notify the UI that the list has changed.
+    OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+}
 
     private void CheckForBleed(StatusEffect woundEffect, Combatant caster, Skill sourceSkill)
     {
