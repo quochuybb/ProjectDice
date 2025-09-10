@@ -1110,7 +1110,7 @@ MonoBehaviour:
   enemyPrefabs:
   - {fileID: 7002921429477738208, guid: 79b8c734d3995934fb1deaf3147180cf, type: 3}
   - {fileID: 7002921429477738208, guid: cbc09a2131a30d64d93cdc29a42e659d, type: 3}
-  - {fileID: 7002921429477738208, guid: 79b8c734d3995934fb1deaf3147180cf, type: 3}
+  - {fileID: 7002921429477738208, guid: 6e117fc9bda5c924fa6c855c7e4f9975, type: 3}
   - {fileID: 7002921429477738208, guid: cbc09a2131a30d64d93cdc29a42e659d, type: 3}
   - {fileID: 7002921429477738208, guid: 79b8c734d3995934fb1deaf3147180cf, type: 3}
   spawnPoints:
@@ -1666,6 +1666,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8f0a8d2c268e794ab8e41c2f6f73831, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlayer: 1
   characterSheet: {fileID: 11400000, guid: 334f9a4abef24db4ca311e303655506d, type: 2}
   targetIndicator: {fileID: 1309169025}
   turnIndicator: {fileID: 1134578526}

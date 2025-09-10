@@ -73,7 +73,7 @@ public class CombatManager : MonoBehaviour
         }
 
         Combatant currentCombatant = turnOrder[currentTurnIndex];
-        
+
         // --- SHOW the new indicator ---
         if (currentCombatant.turnIndicator != null)
         {
@@ -87,7 +87,7 @@ public class CombatManager : MonoBehaviour
             AdvanceTurn();
             return;
         }
-        
+
         if (currentCombatant == playerCombatant)
         {
             state = CombatState.PLAYERTURN;
@@ -111,10 +111,10 @@ public class CombatManager : MonoBehaviour
             yield return StartCoroutine(ProcessSkippedTurn(playerCombatant));
             yield break;
         }
-        
+
         playerCombatant.ProcessCleansingEffectsAtTurnStart();
         if (CheckGameState()) yield break;
-        
+
         playerCombatant.ProcessDoTsAndHoTs();
         if (CheckGameState()) yield break;
 
@@ -135,7 +135,7 @@ public class CombatManager : MonoBehaviour
             yield return StartCoroutine(ProcessSkippedTurn(currentEnemy));
             yield break;
         }
-        
+
         // 2. Start of Turn Phase
         currentEnemy.ProcessCleansingEffectsAtTurnStart();
         if (CheckGameState()) yield break;
@@ -155,21 +155,35 @@ public class CombatManager : MonoBehaviour
         {
             Skill skillToUse = affordableSkills[Random.Range(0, affordableSkills.Count)];
             
-            // Determine the correct target based on the skill's TargetType
-            Combatant finalTarget;
-            if (skillToUse.targetType == TargetType.Self)
+            Combatant primaryTarget;
+
+            // --- NEW, SMARTER AI TARGETING LOGIC ---
+            if (skillToUse.effectType == SkillEffectType.Healing)
             {
-                // If the skill is meant for self-use, the target is the enemy itself.
-                finalTarget = currentEnemy;
+                // If it's a healing skill, find the most wounded ally (or self) to target.
+                // We start with the caster as the default target.
+                primaryTarget = currentEnemy;
+                int lowestHealth = currentEnemy.currentHealth;
+
+                // Check all allies to see if any are more wounded.
+                foreach (Combatant ally in GetValidAllyTargets(currentEnemy))
+                {
+                    if (ally.currentHealth < lowestHealth)
+                    {
+                        lowestHealth = ally.currentHealth;
+                        primaryTarget = ally;
+                    }
+                }
+                // Now, primaryTarget is the most damaged enemy on their team.
             }
-            else // It's an enemy-targeted skill
+            else // It's a Damage skill or other hostile effect.
             {
-                // If the skill is hostile, the target is the player.
-                finalTarget = playerCombatant;
+                // Target the player.
+                primaryTarget = playerCombatant;
             }
 
-            // Use the skill on the correctly determined target.
-            currentEnemy.UseSkill(skillToUse, finalTarget);
+            // Use the skill on the correctly determined primary target.
+            currentEnemy.UseSkill(skillToUse, primaryTarget);
         }
         else
         {
@@ -177,7 +191,7 @@ public class CombatManager : MonoBehaviour
         }
 
         yield return new WaitForSeconds(1.5f);
-        
+
         // 4. End of Turn Phase
         if (CheckGameState()) yield break;
 
@@ -202,17 +216,17 @@ public class CombatManager : MonoBehaviour
     public void OnPlayerSkillSelection(Skill skill)
     {
         if (state != CombatState.PLAYERTURN && state != CombatState.TARGETING) return;
-        
+
         // --- NEW LOGIC FOR RANDOM SKILLS ---
         if (skill.randomHits > 0)
         {
             // Random skills don't need a target. Execute immediately.
             state = CombatState.PROCESSING;
             // We can pass 'null' for the target as it won't be used.
-            StartCoroutine(PlayerAttack(skill, null)); 
+            StartCoroutine(PlayerAttack(skill, null));
             return;
         }
-        
+
         // --- EXISTING LOGIC FOR OTHER SKILLS ---
         if (state == CombatState.TARGETING)
         {
@@ -237,7 +251,7 @@ public class CombatManager : MonoBehaviour
     {
         // You can only select a target when in the TARGETING state.
         if (state != CombatState.TARGETING) return;
-        
+
         // We have a skill and a target, proceed with the attack.
         state = CombatState.PROCESSING;
         combatUI.ShowTargetingPrompt(false); // Hide the prompt
@@ -247,10 +261,10 @@ public class CombatManager : MonoBehaviour
     IEnumerator PlayerAttack(Skill skill, Combatant target) // New parameter
     {
         combatUI.DisablePlayerActions();
-        
+
         // The target is now passed in directly.
-        playerCombatant.UseSkill(skill, target); 
-        
+        playerCombatant.UseSkill(skill, target);
+
         yield return new WaitForSeconds(1.5f);
 
         if (target != null && target.currentHealth <= 0)
@@ -261,22 +275,22 @@ public class CombatManager : MonoBehaviour
                 SetCurrentTarget(null);
             }
         }
-        
+
         if (CheckGameState()) yield break;
-        
+
         playerCombatant.TickDownStatusEffectsAtTurnEnd();
         yield return new WaitForSeconds(0.5f);
 
         AdvanceTurn();
     }
-    
+
     public void SetCurrentTarget(Combatant target)
     {
         if (currentTarget != null && currentTarget.targetIndicator != null)
             currentTarget.targetIndicator.SetActive(false);
-            
+
         currentTarget = target;
-        
+
         if (currentTarget != null && currentTarget.targetIndicator != null)
             currentTarget.targetIndicator.SetActive(true);
 
@@ -306,7 +320,7 @@ public class CombatManager : MonoBehaviour
     void EndCombat()
     {
         combatUI.DisablePlayerActions();
-        
+
         // --- ADD THIS to clean up the UI ---
         if (previouslyActiveCombatant != null && previouslyActiveCombatant.turnIndicator != null)
         {
@@ -316,11 +330,11 @@ public class CombatManager : MonoBehaviour
         if (state == CombatState.WON) Debug.Log("<color=green>You Won!</color>");
         else if (state == CombatState.LOST) Debug.Log("<color=red>You Lost.</color>");
     }
-    
+
     public void OnSkipTurnClicked()
     {
         if (state != CombatState.PLAYERTURN && state != CombatState.TARGETING) return;
-        
+
         // If we were targeting, cancel it.
         if (state == CombatState.TARGETING)
         {
@@ -347,10 +361,12 @@ public class CombatManager : MonoBehaviour
         {
             string effectName = skippedCombatant.HasStatusEffect(StatusEffectType.Freeze) ? "Frozen" : "Stunned";
             Debug.Log($"<color=orange>{skippedCombatant.characterSheet.name} is {effectName} and skips their turn!</color>");
-        } else {
-             Debug.Log($"<color=grey>{skippedCombatant.characterSheet.name} is Ethereal and cannot act this turn.</color>");
         }
-        
+        else
+        {
+            Debug.Log($"<color=grey>{skippedCombatant.characterSheet.name} is Ethereal and cannot act this turn.</color>");
+        }
+
         skippedCombatant.TickDownStatusEffectsAtTurnEnd();
         yield return new WaitForSeconds(1.5f);
         AdvanceTurn();
@@ -376,5 +392,34 @@ public class CombatManager : MonoBehaviour
             combatUI.UpdateSkillButtons(playerCombatant);
         };
         playerCombatant.OnCooldownsChanged += () => combatUI.UpdateSkillButtons(playerCombatant);
+    }
+    
+    public List<Combatant> GetValidAllyTargets(Combatant self)
+    {
+        if (self.isPlayer)
+        {
+            // Player's only ally is themself, so return an empty list.
+            return new List<Combatant>(); 
+        }
+        else // It's an enemy
+        {
+            // Enemy's allies are all other living enemies.
+            return enemies.Where(e => e != null && e.currentHealth > 0 && e != self).ToList();
+        }
+    }
+
+    // Gets a list of hostile targets for a given combatant.
+    public List<Combatant> GetHostileTargets(Combatant self)
+    {
+        if (self.isPlayer)
+        {
+            // Player's hostiles are all living enemies.
+            return enemies.Where(e => e != null && e.currentHealth > 0).ToList();
+        }
+        else // It's an enemy
+        {
+            // Enemy's only hostile is the player.
+            return new List<Combatant> { playerCombatant };
+        }
     }
 }

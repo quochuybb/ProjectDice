@@ -64,7 +64,7 @@ public class Skill : ScriptableObject
     [Range(0, 4)]
     public int chainBounces = 0;
     
-    [Tooltip("Total number of hits delivered to random enemies (0 = not a random skill).")]
+    [Tooltip("Total number of hits delivered to random enemies (0 = not a random skill). If on enemy skill, it will hit player multiple times.")]
     [Range(0, 10)]
     public int randomHits = 0;
 }
