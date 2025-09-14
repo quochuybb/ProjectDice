@@ -25,6 +25,10 @@ public class Combatant : MonoBehaviour
     public List<StatusEffect> activeStatusEffects = new List<StatusEffect>();
     public Dictionary<Skill, int> skillCooldowns = new Dictionary<Skill, int>();
 
+    [Header("Elemental State")]
+    public ElementType primedBy = ElementType.None;
+    public int primeTurnsRemaining = 0;
+
     void Awake()
     {
         Stats = new CharacterStats(characterSheet);
@@ -42,7 +46,7 @@ public class Combatant : MonoBehaviour
     // --- CORE SKILL METHOD ---
     public void UseSkill(Skill skill, Combatant primaryTarget)
     {
-        // --- Initial Checks (Cooldown & Energy) ---
+        // --- 1. INITIAL CHECKS (Can the skill be cast?) ---
         if (IsSkillOnCooldown(skill))
         {
             Debug.Log($"<color=orange>Cannot use {skill.name}, it's on cooldown.</color>");
@@ -58,9 +62,18 @@ public class Combatant : MonoBehaviour
             return;
         }
 
-        // --- HIT/MISS/DODGE LOGIC ---
-        // Only perform these checks for DAMAGING skills that are NOT Random(X).
-        if (skill.randomHits == 0 && skill.targetType == TargetType.Enemy && skill.effectType == SkillEffectType.Damage)
+        // --- 2. COMBO DETONATION (Happens before the hit is checked) ---
+        // If this is a detonator skill targeting a primed enemy, trigger the combo.
+        if (skill.isDetonator && primaryTarget != null && primaryTarget.primedBy != ElementType.None && skill.targetType == TargetType.Enemy)
+        {
+            combatManager.TriggerCombo(skill.element, primaryTarget.primedBy, this, primaryTarget);
+            // Consume the prime on the target.
+            primaryTarget.primedBy = ElementType.None;
+            primaryTarget.primeTurnsRemaining = 0;
+        }
+
+        // --- 3. HIT/MISS/DODGE CHECKS (Does the primary attack land?) ---
+        if (skill.randomHits == 0 && skill.targetType == TargetType.Enemy)
         {
             if (primaryTarget == null)
             {
@@ -68,26 +81,18 @@ public class Combatant : MonoBehaviour
                 return;
             }
 
-            // Check if the attacker misses due to Blind.
-            if (this.CheckForBlindMiss())
+            if (this.CheckForBlindMiss() || primaryTarget.CheckForDodge())
             {
-                ConsumeResources(finalEnergyCost, isEmpowered, skill);
-                return;
-            }
-
-            // Check if the defender dodges the attack.
-            if (primaryTarget.CheckForDodge())
-            {
-                Debug.Log($"{this.characterSheet.name}'s attack was dodged by {primaryTarget.characterSheet.name}!");
+                // Even if the attack misses, the attempt costs resources.
                 ConsumeResources(finalEnergyCost, isEmpowered, skill);
                 return;
             }
         }
         
-        // --- PROCEED WITH SKILL ---
+        // --- 4. RESOURCE CONSUMPTION ---
         ConsumeResources(finalEnergyCost, isEmpowered, skill);
         
-        // Gather all targets based on the skill's multi-targeting properties.
+        // --- 5. TARGET GATHERING ---
         List<Combatant> allTargets = GatherTargets(skill, primaryTarget);
         
         if (allTargets.Count == 0)
@@ -98,39 +103,46 @@ public class Combatant : MonoBehaviour
 
         Debug.Log($"{characterSheet.name} uses {skill.skillName}, targeting {allTargets.Count} creature(s)!");
 
-        // --- APPLY EFFECTS ---
-        // Check for one-time use buffs before the loop.
-        bool powerUpConsumed = HasStatusEffect(StatusEffectType.PowerUp);
-        bool weakenConsumed = HasStatusEffect(StatusEffectType.Weaken);
+        // --- 6. APPLY EFFECTS TO ALL TARGETS ---
+        bool isPoweredUp = HasStatusEffect(StatusEffectType.PowerUp);
+        bool isWeakened = HasStatusEffect(StatusEffectType.Weaken);
 
         foreach (Combatant target in allTargets)
         {
-            // For Random skills, we check for dodge on each individual hit.
-            // This check is also guarded to only apply to damaging effects.
+            // Dodge check for individual random hits
             if (skill.randomHits > 0 && skill.effectType == SkillEffectType.Damage && target.CheckForDodge())
             {
                 Debug.Log($"{this.characterSheet.name}'s random hit was dodged by {target.characterSheet.name}!");
-                continue; // Skip this hit and move to the next.
+                continue;
             }
             
-            // Apply the core damage/healing of the skill.
-            ApplyPrimaryEffect(skill, target, powerUpConsumed, weakenConsumed);
+            // A) Apply the skill's core damage or healing.
+            ApplyPrimaryEffect(skill, target, isPoweredUp, isWeakened);
 
-            // Apply any status effects from the skill.
+            // B) Apply any status effects.
             if (skill.appliesStatusEffect) 
             {
                 ApplySkillStatusEffect(skill, target);
             }
             
-            // Apply any instant utility effects.
+            // C) Apply this skill's element as a Prime.
+            if (skill.isPrimer && skill.element != ElementType.None)
+            {
+                target.primedBy = skill.element;
+                target.primeTurnsRemaining = skill.primeDuration;
+                Debug.Log($"<color=orange>{target.characterSheet.name} has been Primed with {skill.element} for {skill.primeDuration} turns!</color>");
+            }
+            
+            // D) Apply any instant utility effects.
             if (skill.doesCleanse) target.CleanseDebuffs(skill.cleanseAmount);
             if (skill.doesPurge) target.PurgeBuffs(skill.purgeAmount);
         }
 
-        // Consume the one-time buffs after they have been applied to all hits.
-        if (powerUpConsumed) RemoveStatusEffect(StatusEffectType.PowerUp);
-        if (weakenConsumed) RemoveStatusEffect(StatusEffectType.Weaken);
-}
+        // --- 7. CONSUME ONE-TIME BUFFS ---
+        // This happens after all hits have been resolved.
+        if (isPoweredUp) RemoveStatusEffect(StatusEffectType.PowerUp);
+        if (isWeakened) RemoveStatusEffect(StatusEffectType.Weaken);
+    }
 
     // --- HELPER & LOGIC METHODS ---
 
@@ -543,6 +555,17 @@ public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourc
             }
         }
         OnStatusEffectsChanged?.Invoke(activeStatusEffects);
+        if (primedBy != ElementType.None)
+        {
+            primeTurnsRemaining--;
+            if (primeTurnsRemaining <= 0)
+            {
+                Debug.Log($"<color=grey>{characterSheet.name}'s {primedBy} Prime has faded.</color>");
+                primedBy = ElementType.None;
+                // You can add an event here to notify the UI if you add a Prime indicator
+            }
+        }
+        
     }
     
     private void Die()

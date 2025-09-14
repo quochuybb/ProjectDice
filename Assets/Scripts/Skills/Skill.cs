@@ -63,8 +63,18 @@ public class Skill : ScriptableObject
     [Tooltip("Number of additional enemies hit by a Chain skill (0 = no chain).")]
     [Range(0, 4)]
     public int chainBounces = 0;
-    
+
     [Tooltip("Total number of hits delivered to random enemies (0 = not a random skill). If on enemy skill, it will hit player multiple times.")]
     [Range(0, 10)]
     public int randomHits = 0;
+
+    // --- ADD THIS NEW SECTION ---
+    [Header("Elemental Combo System")]
+    [Tooltip("Does this skill apply its element as a Prime?")]
+    public bool isPrimer;
+    [Tooltip("How many turns does the Prime last?")]
+    public int primeDuration = 2;
+
+    [Tooltip("Does this skill detonate Primes? It will use its own element to do so.")]
+    public bool isDetonator;
 }

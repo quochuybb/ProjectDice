@@ -104,28 +104,28 @@ public class CombatManager : MonoBehaviour
     IEnumerator PlayerTurn()
     {
         Debug.Log("--- PLAYER'S TURN ---");
-        
+
         combatUI.DisablePlayerActions();
 
         SetCurrentTarget(currentTarget); // Refresh target indicator if needed.
 
         playerCombatant.ProcessCleansingEffectsAtTurnStart();
         if (CheckGameState()) yield break;
-        
+
         playerCombatant.ProcessDoTsAndHoTs();
         if (CheckGameState()) yield break;
 
         if (playerCombatant.HasStatusEffect(StatusEffectType.Ethereal) || playerCombatant.HasStatusEffect(StatusEffectType.Stun) || playerCombatant.HasStatusEffect(StatusEffectType.Freeze))
         {
             // If the turn is skipped, the controls remain disabled.
-             playerCombatant.TickDownCooldowns();
+            playerCombatant.TickDownCooldowns();
             yield return StartCoroutine(ProcessSkippedTurn(playerCombatant));
             yield break; // Exit after the skipped turn is processed.
         }
 
         playerCombatant.TickDownCooldowns();
         playerCombatant.RegenerateEnergy();
-        
+
         // This line is now correctly guarded. It will only be reached if the player can act.
         combatUI.EnablePlayerActions();
     }
@@ -155,41 +155,41 @@ public class CombatManager : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
 
         // 3. Action Phase (AI Logic)
-    var affordableSkills = currentEnemy.characterSheet.startingSkills
-        .Where(s => s.energyCost <= currentEnemy.currentEnergy && !currentEnemy.IsSkillOnCooldown(s)).ToList();
+        var affordableSkills = currentEnemy.characterSheet.startingSkills
+            .Where(s => s.energyCost <= currentEnemy.currentEnergy && !currentEnemy.IsSkillOnCooldown(s)).ToList();
 
-    if (affordableSkills.Count > 0)
-    {
-        Skill skillToUse = affordableSkills[Random.Range(0, affordableSkills.Count)];
-        
-        Combatant primaryTarget;
+        if (affordableSkills.Count > 0)
+        {
+            Skill skillToUse = affordableSkills[Random.Range(0, affordableSkills.Count)];
 
-        // --- NEW, SIMPLIFIED AI TARGETING ---
-        // Random skills don't need a primary target.
-        if (skillToUse.randomHits > 0)
-        {
-            primaryTarget = null;
-        }
-        // Friendly skills (Healing or Self-targeted buffs) should target an ally or self.
-        else if (skillToUse.effectType == SkillEffectType.Healing || skillToUse.targetType == TargetType.Self)
-        {
-            // For now, the AI will just target itself with friendly skills.
-            // This is simple, predictable, and prevents healing the player.
-            primaryTarget = currentEnemy;
-        }
-        else // It's a hostile, single-target skill.
-        {
-            // Target the player.
-            primaryTarget = playerCombatant;
-        }
+            Combatant primaryTarget;
 
-        // Use the skill on the correctly determined primary target.
-        currentEnemy.UseSkill(skillToUse, primaryTarget);
-    }
-    else
-    {
-        Debug.Log($"<color=orange>{currentEnemy.characterSheet.name} has no affordable actions and passes its turn.</color>");
-    }
+            // --- NEW, SIMPLIFIED AI TARGETING ---
+            // Random skills don't need a primary target.
+            if (skillToUse.randomHits > 0)
+            {
+                primaryTarget = null;
+            }
+            // Friendly skills (Healing or Self-targeted buffs) should target an ally or self.
+            else if (skillToUse.effectType == SkillEffectType.Healing || skillToUse.targetType == TargetType.Self)
+            {
+                // For now, the AI will just target itself with friendly skills.
+                // This is simple, predictable, and prevents healing the player.
+                primaryTarget = currentEnemy;
+            }
+            else // It's a hostile, single-target skill.
+            {
+                // Target the player.
+                primaryTarget = playerCombatant;
+            }
+
+            // Use the skill on the correctly determined primary target.
+            currentEnemy.UseSkill(skillToUse, primaryTarget);
+        }
+        else
+        {
+            Debug.Log($"<color=orange>{currentEnemy.characterSheet.name} has no affordable actions and passes its turn.</color>");
+        }
 
         yield return new WaitForSeconds(0.5f);
 
@@ -394,13 +394,13 @@ public class CombatManager : MonoBehaviour
         };
         playerCombatant.OnCooldownsChanged += () => combatUI.UpdateSkillButtons(playerCombatant);
     }
-    
+
     public List<Combatant> GetValidAllyTargets(Combatant self)
     {
         if (self.isPlayer)
         {
             // Player's only ally is themself, so return an empty list.
-            return new List<Combatant>(); 
+            return new List<Combatant>();
         }
         else // It's an enemy
         {
@@ -422,5 +422,33 @@ public class CombatManager : MonoBehaviour
             // Enemy's only hostile is the player.
             return new List<Combatant> { playerCombatant };
         }
+    }
+    
+    public void TriggerCombo(ElementType detonatorElement, ElementType primeElement, Combatant caster, Combatant target)
+    {
+        Debug.Log($"<color=yellow>COMBO! Detonator: {detonatorElement}, Prime: {primeElement}</color>");
+
+        // --- VOLCANO COMBO ---
+        if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Quake)
+        {
+            Debug.Log("<color=red>VOLCANO!</color>");
+            
+            // GDD: Deals moderate AoE damage to all enemies.
+            int aoeDamage = 30; // Example base value
+            List<Combatant> allEnemies = GetAllValidEnemyTargets();
+            foreach (Combatant enemy in allEnemies)
+            {
+                // We can reuse the TakeDamage method for this
+                enemy.TakeDamage(aoeDamage);
+            }
+
+            // GDD: Applies Stun to the Primed target.
+            var stunEffect = new StatusEffect(StatusEffectType.Stun, 1, EffectClassification.Debuff);
+            // The original caster of the detonator skill is the source of the stun.
+            target.ApplyStatusEffect(stunEffect, caster, null); 
+        }
+        
+        // Future: Add more else-if blocks for other combos like Mudslide, Flash Steam, etc.
+        // else if (primeElement == ElementType.Quake && detonatorElement == ElementType.Tide) { /* Mudslide logic */ }
     }
 }

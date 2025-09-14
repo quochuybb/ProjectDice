@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
-  m_Name: Bleed
+  m_Name: Inferno Prime
   m_EditorClassIdentifier: 
-  skillName: Wound
+  skillName: 
   description: 
   rarity: 0
   element: 0
-  energyCost: 20
-  cooldown: 10
+  energyCost: 0
+  cooldown: 0
   effectType: 0
   targetType: 0
   baseDamage: 0
@@ -26,11 +26,11 @@ MonoBehaviour:
   intelligenceRatio: 0
   baseDotHotValue: 0
   dotHotIntelligenceRatio: 0
-  appliesStatusEffect: 1
-  effectToApply: 14
-  effectClassification: 1
-  effectDuration: 99
-  stacksToApply: 2
+  appliesStatusEffect: 0
+  effectToApply: 0
+  effectClassification: 0
+  effectDuration: 0
+  stacksToApply: 1
   statToModify: 0
   modificationType: 0
   modificationValue: 0
@@ -41,3 +41,6 @@ MonoBehaviour:
   areaTargets: 1
   chainBounces: 0
   randomHits: 0
+  isPrimer: 0
+  primeDuration: 2
+  isDetonator: 0
