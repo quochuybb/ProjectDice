@@ -437,7 +437,7 @@ public class CombatManager : MonoBehaviour
             Debug.Log("<color=red>VOLCANO!</color>");
             
             // GDD: Deals moderate AoE damage to all enemies.
-            int aoeDamage = 30; // Example base value
+            int aoeDamage = (int)caster.Stats.Might.Value; 
             List<Combatant> allEnemies = GetAllValidEnemyTargets();
             foreach (Combatant enemy in allEnemies)
             {

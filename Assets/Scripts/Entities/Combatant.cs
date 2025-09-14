@@ -635,16 +635,54 @@ public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourc
     
     private void CleanseDebuffs(int amount)
     {
-        var removableDebuffs = activeStatusEffects.Where(e => e.Classification == EffectClassification.Debuff && e.Type != StatusEffectType.Wound && e.Type != StatusEffectType.Bleed).ToList();
-        if (removableDebuffs.Count == 0) return;
-        Debug.Log($"<color=cyan>Attempting to cleanse {amount} debuffs...</color>");
-        for (int i = 0; i < amount && removableDebuffs.Count > 0; i++)
+        // --- STEP 1: GATHER ALL REMOVABLE "THINGS" ---
+        
+        // Create a temporary list to hold all things that can be cleansed.
+        // We use a List of Action to store "what to do" to remove the effect.
+        List<System.Action> removableActions = new List<System.Action>();
+
+        // Add all eligible standard debuffs to the list of actions.
+        // The action is to call RemoveStatusEffect with the debuff's type.
+        removableActions.AddRange(
+            activeStatusEffects
+                .Where(e => e.Classification == EffectClassification.Debuff &&
+                            e.Type != StatusEffectType.Wound &&
+                            e.Type != StatusEffectType.Bleed)
+                .Select(effect => new System.Action(() => {
+                    Debug.Log($"<color=cyan>Cleansed {effect.Type}!</color>");
+                    RemoveStatusEffect(effect.Type);
+                }))
+        );
+
+        // --- NEW LOGIC: Treat the Prime as a removable debuff ---
+        if (this.primedBy != ElementType.None)
         {
-            int randomIndex = Random.Range(0, removableDebuffs.Count);
-            StatusEffect toRemove = removableDebuffs[randomIndex];
-            Debug.Log($"<color=cyan>Cleansed {toRemove.Type}!</color>");
-            RemoveStatusEffect(toRemove.Type);
-            removableDebuffs.RemoveAt(randomIndex);
+            // Add a new action to the list that specifically handles removing the Prime.
+            removableActions.Add(() => {
+                Debug.Log($"<color=cyan>Cleansed {this.primedBy} Prime!</color>");
+                this.primedBy = ElementType.None;
+                this.primeTurnsRemaining = 0;
+                this.OnPrimeStatusChanged?.Invoke(); // Make sure the UI updates
+            });
+        }
+
+        // --- STEP 2: RANDOMLY REMOVE 'N' THINGS ---
+        
+        if (removableActions.Count == 0) return;
+
+        Debug.Log($"<color=cyan>Attempting to cleanse {amount} debuffs from {characterSheet.name}...</color>");
+        
+        // Loop 'amount' times, or until there's nothing left to remove.
+        for (int i = 0; i < amount && removableActions.Count > 0; i++)
+        {
+            // Pick a random action from our list.
+            int randomIndex = Random.Range(0, removableActions.Count);
+            
+            // Execute the chosen action (which will either remove a status effect or the prime).
+            removableActions[randomIndex].Invoke();
+
+            // Remove the action from the list so it can't be chosen again.
+            removableActions.RemoveAt(randomIndex);
         }
     }
     
