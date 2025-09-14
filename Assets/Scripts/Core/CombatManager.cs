@@ -58,7 +58,7 @@ public class CombatManager : MonoBehaviour
             enemy.OnStatusEffectsChanged += (effects) => { if (currentTarget == enemy) combatUI.UpdateTargetHUD(enemy); };
         }
 
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(0.5f);
         StartNextTurn();
     }
 
@@ -104,24 +104,29 @@ public class CombatManager : MonoBehaviour
     IEnumerator PlayerTurn()
     {
         Debug.Log("--- PLAYER'S TURN ---");
-        SetCurrentTarget(currentTarget);
+        
+        combatUI.DisablePlayerActions();
+
+        SetCurrentTarget(currentTarget); // Refresh target indicator if needed.
+
         playerCombatant.ProcessCleansingEffectsAtTurnStart();
         if (CheckGameState()) yield break;
         
         playerCombatant.ProcessDoTsAndHoTs();
         if (CheckGameState()) yield break;
 
-        
-
         if (playerCombatant.HasStatusEffect(StatusEffectType.Ethereal) || playerCombatant.HasStatusEffect(StatusEffectType.Stun) || playerCombatant.HasStatusEffect(StatusEffectType.Freeze))
         {
+            // If the turn is skipped, the controls remain disabled.
+             playerCombatant.TickDownCooldowns();
             yield return StartCoroutine(ProcessSkippedTurn(playerCombatant));
-            yield break;
+            yield break; // Exit after the skipped turn is processed.
         }
-
 
         playerCombatant.TickDownCooldowns();
         playerCombatant.RegenerateEnergy();
+        
+        // This line is now correctly guarded. It will only be reached if the player can act.
         combatUI.EnablePlayerActions();
     }
 
@@ -129,7 +134,7 @@ public class CombatManager : MonoBehaviour
     {
         Debug.Log($"--- {currentEnemy.characterSheet.name}'s TURN ---");
         combatUI.UpdateTargetHUD(currentEnemy);
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.5f);
         currentEnemy.ProcessCleansingEffectsAtTurnStart();
         if (CheckGameState()) yield break;
 
@@ -147,7 +152,7 @@ public class CombatManager : MonoBehaviour
 
         currentEnemy.TickDownCooldowns();
         currentEnemy.RegenerateEnergy();
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.5f);
 
         // 3. Action Phase (AI Logic)
     var affordableSkills = currentEnemy.characterSheet.startingSkills
@@ -186,7 +191,7 @@ public class CombatManager : MonoBehaviour
         Debug.Log($"<color=orange>{currentEnemy.characterSheet.name} has no affordable actions and passes its turn.</color>");
     }
 
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(0.5f);
 
         // 4. End of Turn Phase
         if (CheckGameState()) yield break;
@@ -261,7 +266,7 @@ public class CombatManager : MonoBehaviour
         // The target is now passed in directly.
         playerCombatant.UseSkill(skill, target);
 
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(0.5f);
 
         if (target != null && target.currentHealth <= 0)
         {
@@ -364,7 +369,7 @@ public class CombatManager : MonoBehaviour
         }
 
         skippedCombatant.TickDownStatusEffectsAtTurnEnd();
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(0.5f);
         AdvanceTurn();
     }
 
