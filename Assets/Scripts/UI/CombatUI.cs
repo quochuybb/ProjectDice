@@ -31,6 +31,7 @@ public class CombatUI : MonoBehaviour
 
     private List<SkillButtonUI> skillButtons = new List<SkillButtonUI>();
     private Combatant playerCombatantRef;
+    
 
     private class SkillButtonUI
     {
@@ -52,7 +53,7 @@ public class CombatUI : MonoBehaviour
         UpdatePlayerHealth(combatant.currentHealth, (int)combatant.Stats.MaxHealth.Value);
         UpdatePlayerStats(combatant);
         UpdateInventoryUI(combatant.GetComponent<InventoryComponent>().equippedItems);
-        UpdatePlayerStatusEffectsUI(combatant.activeStatusEffects);
+        UpdatePlayerStatusEffectsUI(combatant.activeStatusEffects, combatant);
     }
 
     public void UpdateTargetHUD(Combatant target)
@@ -67,7 +68,7 @@ public class CombatUI : MonoBehaviour
         targetNameText.text = target.characterSheet.name;
         UpdateTargetHealth(target.currentHealth, (int)target.Stats.MaxHealth.Value);
         UpdateTargetStats(target);
-        UpdateTargetStatusEffectsUI(target.activeStatusEffects);
+        UpdateTargetStatusEffectsUI(target.activeStatusEffects, target);
     }
 
     public void CreatePlayerSkillButtons(Combatant player, CombatManager combatManager)
@@ -121,8 +122,8 @@ public class CombatUI : MonoBehaviour
     public void UpdateTargetHealth(int current, int max) => targetHealthText.text = $"HP: {current} / {max}";
     public void UpdatePlayerStats(Combatant c) => playerStatsText.text = BuildStatsString(c);
     public void UpdateTargetStats(Combatant c) => targetStatsText.text = BuildStatsString(c);
-    public void UpdatePlayerStatusEffectsUI(List<StatusEffect> e) => playerStatusText.text = BuildStatusEffectsString(e, true);
-    public void UpdateTargetStatusEffectsUI(List<StatusEffect> e) => targetStatusText.text = BuildStatusEffectsString(e, false);
+    public void UpdatePlayerStatusEffectsUI(List<StatusEffect> e, Combatant c) => playerStatusText.text = BuildStatusEffectsString(e, c, true);
+    public void UpdateTargetStatusEffectsUI(List<StatusEffect> e, Combatant c) => targetStatusText.text = BuildStatusEffectsString(e, c, false);
     
     public void UpdateInventoryUI(Dictionary<Item, int> items)
     {
@@ -189,28 +190,65 @@ public class CombatUI : MonoBehaviour
         return sb.ToString();
     }
 
-    private string BuildStatusEffectsString(List<StatusEffect> effects, bool includeTitle)
+    private string BuildStatusEffectsString(List<StatusEffect> effects, Combatant combatant, bool includeTitle)
     {
-        if (effects == null || effects.Count == 0) return "";
+        // Safety check in case the combatant is null (e.g., target deselected)
+        if (combatant == null) return "";
+
         StringBuilder sb = new StringBuilder();
-        if (includeTitle) sb.AppendLine("<b>Effects:</b>");
-        
-        foreach(var effect in effects)
+        bool hasAnyContent = false;
+
+        // --- Part 1: Display the Elemental Prime status ---
+        if (combatant.primedBy != ElementType.None)
         {
-            if (effect.TargetStat != StatType.None && (effect.Type == StatusEffectType.StatUp || effect.Type == StatusEffectType.StatDown))
-            {
-                string effectName = (effect.Type == StatusEffectType.StatUp) ? "Up" : "Down";
-                string valueText;
-                float valueToDisplay = (effect.Type == StatusEffectType.StatDown) ? -effect.ModValue : effect.ModValue;
-                if (effect.ModType == StatModType.Flat) valueText = valueToDisplay.ToString("+#;-#");
-                else valueText = (valueToDisplay * 100).ToString("+#;-#") + "%";
-                sb.AppendLine($"- {effect.TargetStat} {effectName} ({valueText}) ({effect.Duration})");
-            }
-            else if (effect.Type == StatusEffectType.Wound) sb.AppendLine($"- {effect.Type} (x{effect.Stacks})");
-            else if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
-                sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
-            else sb.AppendLine($"- {effect.Type} ({effect.Duration})");
+            // Add the title only on the first piece of content.
+            if (includeTitle) sb.AppendLine("<b>Effects:</b>");
+            
+            // You can add a helper method to get colors for elements later.
+            sb.AppendLine($"<color=orange>- Primed: {combatant.primedBy} ({combatant.primeTurnsRemaining})</color>");
+            hasAnyContent = true;
         }
+
+        // --- Part 2: Display the list of active status effects ---
+        if (effects != null && effects.Count > 0)
+        {
+            // If we haven't added the title yet (because there was no Prime), add it now.
+            if (!hasAnyContent && includeTitle)
+            {
+                sb.AppendLine("<b>Effects:</b>");
+            }
+            hasAnyContent = true;
+            
+            // --- This is your existing, correct logic for displaying effects ---
+            foreach(var effect in effects)
+            {
+                if (effect.TargetStat != StatType.None && (effect.Type == StatusEffectType.StatUp || effect.Type == StatusEffectType.StatDown))
+                {
+                    string effectName = (effect.Type == StatusEffectType.StatUp) ? "Up" : "Down";
+                    string valueText;
+                    float valueToDisplay = (effect.Type == StatusEffectType.StatDown) ? -effect.ModValue : effect.ModValue;
+                    if (effect.ModType == StatModType.Flat) valueText = valueToDisplay.ToString("+#;-#");
+                    else valueText = (valueToDisplay * 100).ToString("+#;-#") + "%";
+                    sb.AppendLine($"- {effect.TargetStat} {effectName} ({valueText}) ({effect.Duration})");
+                }
+                else if (effect.Type == StatusEffectType.Wound)
+                {
+                    sb.AppendLine($"- {effect.Type} (x{effect.Stacks})");
+                }
+                else if (effect.Type == StatusEffectType.Burn || effect.Type == StatusEffectType.Regeneration || effect.Type == StatusEffectType.Poison)
+                {
+                    sb.AppendLine($"- {effect.Type} ({effect.TickValue}/t) ({effect.Duration})");
+                }
+                else
+                {
+                    sb.AppendLine($"- {effect.Type} ({effect.Duration})");
+                }
+            }
+        }
+
+        // If there were no Primes and no status effects, return an empty string.
+        if (!hasAnyContent) return "";
+
         return sb.ToString();
     }
 

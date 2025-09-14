@@ -20,6 +20,7 @@ public class Combatant : MonoBehaviour
     public UnityAction<int, int> OnEnergyChanged;
     public UnityAction<List<StatusEffect>> OnStatusEffectsChanged;
     public UnityAction OnCooldownsChanged;
+    public UnityAction OnPrimeStatusChanged;
 
     private CombatManager combatManager;
     public List<StatusEffect> activeStatusEffects = new List<StatusEffect>();
@@ -70,6 +71,7 @@ public class Combatant : MonoBehaviour
             // Consume the prime on the target.
             primaryTarget.primedBy = ElementType.None;
             primaryTarget.primeTurnsRemaining = 0;
+            primaryTarget.OnPrimeStatusChanged?.Invoke(); 
         }
 
         // --- 3. HIT/MISS/DODGE CHECKS (Does the primary attack land?) ---
@@ -131,6 +133,7 @@ public class Combatant : MonoBehaviour
                 target.primedBy = skill.element;
                 target.primeTurnsRemaining = skill.primeDuration;
                 Debug.Log($"<color=orange>{target.characterSheet.name} has been Primed with {skill.element} for {skill.primeDuration} turns!</color>");
+                target.OnPrimeStatusChanged?.Invoke();
             }
             
             // D) Apply any instant utility effects.
@@ -562,7 +565,7 @@ public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourc
             {
                 Debug.Log($"<color=grey>{characterSheet.name}'s {primedBy} Prime has faded.</color>");
                 primedBy = ElementType.None;
-                // You can add an event here to notify the UI if you add a Prime indicator
+                OnPrimeStatusChanged?.Invoke(); 
             }
         }
         

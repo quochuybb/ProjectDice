@@ -56,6 +56,7 @@ public class CombatManager : MonoBehaviour
         {
             enemy.OnHealthChanged += (current, max) => { if (currentTarget == enemy) combatUI.UpdateTargetHUD(enemy); };
             enemy.OnStatusEffectsChanged += (effects) => { if (currentTarget == enemy) combatUI.UpdateTargetHUD(enemy); };
+            enemy.OnPrimeStatusChanged += () => { if (currentTarget == enemy) combatUI.UpdateTargetHUD(enemy); };
         }
 
         yield return new WaitForSeconds(0.5f);
@@ -388,11 +389,13 @@ public class CombatManager : MonoBehaviour
         };
         playerCombatant.OnStatusEffectsChanged += (effects) =>
         {
-            combatUI.UpdatePlayerStatusEffectsUI(effects);
+            // Pass the playerCombatant to the UI methods
+            combatUI.UpdatePlayerStatusEffectsUI(effects, playerCombatant);
             combatUI.UpdatePlayerStats(playerCombatant);
             combatUI.UpdateSkillButtons(playerCombatant);
         };
         playerCombatant.OnCooldownsChanged += () => combatUI.UpdateSkillButtons(playerCombatant);
+        playerCombatant.OnPrimeStatusChanged += () => combatUI.UpdatePlayerStatusEffectsUI(playerCombatant.activeStatusEffects, playerCombatant);
     }
 
     public List<Combatant> GetValidAllyTargets(Combatant self)
