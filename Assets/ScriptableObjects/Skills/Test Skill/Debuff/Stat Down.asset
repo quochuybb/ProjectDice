@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
+  m_Name: Stat Down
+  m_EditorClassIdentifier: 
+  skillName: Stat Down
+  description: 
+  rarity: 0
+  element: 0
+  energyCost: 20
+  cooldown: 1
+  effectType: 1
+  targetType: 1
+  baseDamage: 0
+  mightRatio: 0
+  baseHeal: 0
+  intelligenceRatio: 0
+  baseDotHotValue: 0
+  dotHotIntelligenceRatio: 0
+  appliesStatusEffect: 1
+  effectToApply: 17
+  effectClassification: 1
+  effectDuration: 2
+  stacksToApply: 1
+  statToModify: 2
+  modificationType: 1
+  modificationValue: 10
+  doesCleanse: 0
+  cleanseAmount: 0
+  doesPurge: 0
+  purgeAmount: 0
+  areaTargets: 1
+  chainBounces: 0
+  randomHits: 0
