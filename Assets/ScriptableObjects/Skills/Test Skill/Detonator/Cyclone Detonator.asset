@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
   m_Name: Cyclone Detonator
   m_EditorClassIdentifier: 
-  skillName: Tide Detonator
+  skillName: Cyclone Detonator
   description: 
   rarity: 0
-  element: 3
+  element: 4
   energyCost: 20
   cooldown: 1
   effectType: 0
