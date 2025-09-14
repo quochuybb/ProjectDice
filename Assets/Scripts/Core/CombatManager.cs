@@ -450,8 +450,28 @@ public class CombatManager : MonoBehaviour
             // The original caster of the detonator skill is the source of the stun.
             target.ApplyStatusEffect(stunEffect, caster, null); 
         }
-        
-        // Future: Add more else-if blocks for other combos like Mudslide, Flash Steam, etc.
-        // else if (primeElement == ElementType.Quake && detonatorElement == ElementType.Tide) { /* Mudslide logic */ }
+            // --- FLASH STEAM COMBO ---
+        else if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Tide)
+        {
+            Debug.Log("<color=lightblue>FLASH STEAM!</color>");
+            
+            // GDD: Deals moderate damage. (Damage: 1.5 * Might)
+            int comboDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 1.5f);
+            target.TakeDamage(comboDamage);
+
+            // GDD: Reduces the target's Armor by 50% for 2 turns.
+            // This is a StatDown effect.
+            var armorDownEffect = new StatusEffect(
+                StatusEffectType.StatDown,      // The effect type
+                2,                              // Duration
+                EffectClassification.Debuff,    // It's a debuff
+                StatType.Armor,                 // The stat to target
+                StatModType.Percent,            // It's a percentage reduction
+                0.50f                           // The value (50%)
+            );
+            
+            // Apply the effect to the target, with the caster as the source.
+            target.ApplyStatusEffect(armorDownEffect, caster, null);
+        }
     }
 }
