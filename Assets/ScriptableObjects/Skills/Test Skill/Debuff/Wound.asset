@@ -29,7 +29,7 @@ MonoBehaviour:
   appliesStatusEffect: 1
   effectToApply: 14
   effectClassification: 1
-  effectDuration: 99
+  effectDuration: 1
   stacksToApply: 3
   statToModify: 0
   modificationType: 0
@@ -41,3 +41,6 @@ MonoBehaviour:
   areaTargets: 1
   chainBounces: 0
   randomHits: 0
+  isPrimer: 0
+  primeDuration: 2
+  isDetonator: 0

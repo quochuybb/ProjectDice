@@ -41,3 +41,6 @@ MonoBehaviour:
   areaTargets: 1
   chainBounces: 0
   randomHits: 0
+  isPrimer: 0
+  primeDuration: 2
+  isDetonator: 0

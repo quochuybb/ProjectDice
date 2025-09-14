@@ -15,13 +15,13 @@ MonoBehaviour:
   skillName: Quake Detonator
   description: 
   rarity: 0
-  element: 0
-  energyCost: 0
-  cooldown: 0
+  element: 2
+  energyCost: 20
+  cooldown: 1
   effectType: 0
   targetType: 0
-  baseDamage: 0
-  mightRatio: 0
+  baseDamage: 10
+  mightRatio: 1
   baseHeal: 0
   intelligenceRatio: 0
   baseDotHotValue: 0
@@ -43,4 +43,4 @@ MonoBehaviour:
   randomHits: 0
   isPrimer: 0
   primeDuration: 2
-  isDetonator: 0
+  isDetonator: 1

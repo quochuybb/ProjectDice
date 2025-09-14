@@ -426,7 +426,7 @@ public class CombatManager : MonoBehaviour
             return new List<Combatant> { playerCombatant };
         }
     }
-    
+
     public void TriggerCombo(ElementType detonatorElement, ElementType primeElement, Combatant caster, Combatant target)
     {
         Debug.Log($"<color=yellow>COMBO! Detonator: {detonatorElement}, Prime: {primeElement}</color>");
@@ -435,9 +435,9 @@ public class CombatManager : MonoBehaviour
         if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Quake)
         {
             Debug.Log("<color=red>VOLCANO!</color>");
-            
+
             // GDD: Deals moderate AoE damage to all enemies.
-            int aoeDamage = (int)caster.Stats.Might.Value; 
+            int aoeDamage = (int)caster.Stats.Might.Value;
             List<Combatant> allEnemies = GetAllValidEnemyTargets();
             foreach (Combatant enemy in allEnemies)
             {
@@ -448,19 +448,16 @@ public class CombatManager : MonoBehaviour
             // GDD: Applies Stun to the Primed target.
             var stunEffect = new StatusEffect(StatusEffectType.Stun, 1, EffectClassification.Debuff);
             // The original caster of the detonator skill is the source of the stun.
-            target.ApplyStatusEffect(stunEffect, caster, null); 
+            target.ApplyStatusEffect(stunEffect, caster, null);
         }
-            // --- FLASH STEAM COMBO ---
+        // --- FLASH STEAM COMBO ---
         else if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Tide)
         {
             Debug.Log("<color=lightblue>FLASH STEAM!</color>");
-            
-            // GDD: Deals moderate damage. (Damage: 1.5 * Might)
+
             int comboDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 1.5f);
             target.TakeDamage(comboDamage);
 
-            // GDD: Reduces the target's Armor by 50% for 2 turns.
-            // This is a StatDown effect.
             var armorDownEffect = new StatusEffect(
                 StatusEffectType.StatDown,      // The effect type
                 2,                              // Duration
@@ -469,9 +466,34 @@ public class CombatManager : MonoBehaviour
                 StatModType.Percent,            // It's a percentage reduction
                 0.50f                           // The value (50%)
             );
-            
+
             // Apply the effect to the target, with the caster as the source.
             target.ApplyStatusEffect(armorDownEffect, caster, null);
+        }
+        // --- HEAT WAVE COMBO ---
+        else if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Cyclone)
+        {
+            Debug.Log("<color=orangered>HEAT WAVE!</color>");
+
+            var burnEffectTemplate = new StatusEffect(
+                StatusEffectType.Burn,          // The effect type
+                3,                              // Duration
+                EffectClassification.Debuff     // It's a debuff
+            );
+            
+            burnEffectTemplate.TickValue = Mathf.RoundToInt(caster.Stats.Intelligence.Value * 1.0f);
+
+            // Get all targets hostile to the caster.
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+
+            Debug.Log($"Applying a {burnEffectTemplate.TickValue}/turn Burn to {allEnemies.Count} enemies.");
+
+            foreach (Combatant enemy in allEnemies)
+            {
+                // Apply the pre-configured Burn effect to each enemy.
+                // We pass null for the sourceSkill because the TickValue is already calculated.
+                enemy.ApplyStatusEffect(burnEffectTemplate, caster, null);
+            }
         }
     }
 }

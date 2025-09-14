@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bec982720eb3d7944b0f691198e47554, type: 3}
   m_Name: Inferno Prime
   m_EditorClassIdentifier: 
-  skillName: 
+  skillName: Inferno Prime
   description: 
   rarity: 0
-  element: 0
-  energyCost: 0
-  cooldown: 0
+  element: 1
+  energyCost: 20
+  cooldown: 1
   effectType: 0
   targetType: 0
-  baseDamage: 0
-  mightRatio: 0
+  baseDamage: 10
+  mightRatio: 1
   baseHeal: 0
   intelligenceRatio: 0
   baseDotHotValue: 0
@@ -41,6 +41,6 @@ MonoBehaviour:
   areaTargets: 1
   chainBounces: 0
   randomHits: 0
-  isPrimer: 0
-  primeDuration: 2
+  isPrimer: 1
+  primeDuration: 3
   isDetonator: 0
