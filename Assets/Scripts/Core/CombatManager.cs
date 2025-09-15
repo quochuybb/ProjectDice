@@ -434,7 +434,7 @@ public class CombatManager : MonoBehaviour
         // --- VOLCANO COMBO ---
         if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Quake)
         {
-            Debug.Log("<color=red>VOLCANO!</color>");
+            Debug.Log("VOLCANO!");
 
             // GDD: Deals moderate AoE damage to all enemies.
             int aoeDamage = (int)caster.Stats.Might.Value;
@@ -453,7 +453,7 @@ public class CombatManager : MonoBehaviour
         // --- FLASH STEAM COMBO ---
         else if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Tide)
         {
-            Debug.Log("<color=lightblue>FLASH STEAM!</color>");
+            Debug.Log("FLASH STEAM!");
 
             int comboDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 1.5f);
             target.TakeDamage(comboDamage);
@@ -473,27 +473,125 @@ public class CombatManager : MonoBehaviour
         // --- HEAT WAVE COMBO ---
         else if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Cyclone)
         {
-            Debug.Log("<color=orangered>HEAT WAVE!</color>");
+            Debug.Log("HEAT WAVE!");
 
             var burnEffectTemplate = new StatusEffect(
                 StatusEffectType.Burn,          // The effect type
                 3,                              // Duration
                 EffectClassification.Debuff     // It's a debuff
             );
-            
+
             burnEffectTemplate.TickValue = Mathf.RoundToInt(caster.Stats.Intelligence.Value * 1.0f);
 
-            // Get all targets hostile to the caster.
             List<Combatant> allEnemies = GetHostileTargets(caster);
 
             Debug.Log($"Applying a {burnEffectTemplate.TickValue}/turn Burn to {allEnemies.Count} enemies.");
 
             foreach (Combatant enemy in allEnemies)
             {
-                // Apply the pre-configured Burn effect to each enemy.
-                // We pass null for the sourceSkill because the TickValue is already calculated.
                 enemy.ApplyStatusEffect(burnEffectTemplate, caster, null);
             }
         }
+        // --- MUDSLIDE COMBO ---
+        else if (primeElement == ElementType.Quake && detonatorElement == ElementType.Tide)
+        {
+            Debug.Log("MUDSLIDE");
+
+            int aoeDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 0.5f);
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+
+            Debug.Log($"Dealing {aoeDamage} AoE damage to {allEnemies.Count} enemies.");
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.TakeDamage(aoeDamage);
+            }
+
+            var speedDownEffect = new StatusEffect(
+                StatusEffectType.StatDown,      // The effect type
+                2,                              // Duration
+                EffectClassification.Debuff,    // It's a debuff
+                StatType.Speed,                 // The stat to target
+                StatModType.Percent,            // It's a percentage reduction
+                0.50f                           // The value (50%)
+            );
+
+            Debug.Log($"Applying a 50% Speed debuff to {allEnemies.Count} enemies.");
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.ApplyStatusEffect(speedDownEffect, caster, null);
+            }
+        }
+        // --- OVERGROWTH COMBO ---
+        else if (primeElement == ElementType.Quake && detonatorElement == ElementType.Verdant)
+        {
+            Debug.Log("OVERGROWTH");
+            
+            int aoeDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 0.5f);
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.TakeDamage(aoeDamage);
+            }
+
+            var mortalWoundEffect = new StatusEffect(StatusEffectType.MortalWound, 3, EffectClassification.Debuff);
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.ApplyStatusEffect(mortalWoundEffect, caster, null);
+            }
+        }
+
+        // --- MAELSTROM COMBO ---
+        else if (primeElement == ElementType.Tide && detonatorElement == ElementType.Cyclone)
+        {
+            Debug.Log("MAELSTROM");
+            
+            int comboDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 1.5f);
+            target.TakeDamage(comboDamage);
+
+            var vulnerableEffect = new StatusEffect(StatusEffectType.Vulnerable, 2, EffectClassification.Debuff);
+            target.ApplyStatusEffect(vulnerableEffect, caster, null);
+        }
+        
+        // --- TOXIC BLOOM COMBO ---
+        else if (primeElement == ElementType.Tide && detonatorElement == ElementType.Verdant)
+        {
+            Debug.Log("TOXIC BLOOM");
+
+            var poisonEffectTemplate = new StatusEffect(StatusEffectType.Poison, 3, EffectClassification.Debuff);
+            poisonEffectTemplate.TickValue = Mathf.RoundToInt(caster.Stats.Intelligence.Value * 0.7f);
+
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.ApplyStatusEffect(poisonEffectTemplate, caster, null);
+            }
+        }
+
+        // --- UPROOT COMBO ---
+        else if (primeElement == ElementType.Cyclone && detonatorElement == ElementType.Verdant)
+        {
+            Debug.Log("UPROOT");
+            
+            int aoeDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 0.5f);
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.TakeDamage(aoeDamage);
+            }
+
+            var woundEffect = new StatusEffect(StatusEffectType.Wound, 99, EffectClassification.Debuff);
+            woundEffect.Stacks = 3; // The effect itself will have 3 stacks.
+            
+            Skill comboWoundSkill = ScriptableObject.CreateInstance<Skill>();
+            comboWoundSkill.stacksToApply = 3;
+
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.ApplyStatusEffect(woundEffect, caster, comboWoundSkill);
+            }
+        }
+
     }
 }
