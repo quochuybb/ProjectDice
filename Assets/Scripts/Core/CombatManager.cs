@@ -582,7 +582,7 @@ public class CombatManager : MonoBehaviour
             }
 
             var woundEffect = new StatusEffect(StatusEffectType.Wound, 99, EffectClassification.Debuff);
-            woundEffect.Stacks = 3; // The effect itself will have 3 stacks.
+            woundEffect.Stacks = 2; // The effect itself will have 3 stacks.
             
             Skill comboWoundSkill = ScriptableObject.CreateInstance<Skill>();
             comboWoundSkill.stacksToApply = 3;
@@ -592,6 +592,167 @@ public class CombatManager : MonoBehaviour
                 enemy.ApplyStatusEffect(woundEffect, caster, comboWoundSkill);
             }
         }
+                // --- BOILED POISON COMBO ---
+        else if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Verdant)
+        {
+            Debug.Log("BOILED POISON!");
 
+            // Apply Burn
+            var burnEffect = new StatusEffect(StatusEffectType.Burn, 3, EffectClassification.Debuff);
+            burnEffect.TickValue = Mathf.RoundToInt(caster.Stats.Intelligence.Value * 1.0f);
+            target.ApplyStatusEffect(burnEffect, caster, null);
+
+            // Apply Mortal Wound
+            var mortalWoundEffect = new StatusEffect(StatusEffectType.MortalWound, 3, EffectClassification.Debuff);
+            target.ApplyStatusEffect(mortalWoundEffect, caster, null);
+        }
+
+        // --- INTERNAL BURST COMBO ---
+        else if (primeElement == ElementType.Inferno && detonatorElement == ElementType.Inferno)
+        {
+            Debug.Log("INTERNAL BURST!");
+            
+            int aoeDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 1.5f);
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.TakeDamage(aoeDamage);
+            }
+        }
+
+        // --- SANDSTORM COMBO ---
+        else if (primeElement == ElementType.Quake && detonatorElement == ElementType.Cyclone)
+        {
+            Debug.Log("SANDSTORM!");
+
+            var blindEffect = new StatusEffect(StatusEffectType.Blind, 1, EffectClassification.Debuff);
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.ApplyStatusEffect(blindEffect, caster, null);
+            }
+        }
+
+        // --- MAGMA COMBO ---
+        else if (primeElement == ElementType.Quake && detonatorElement == ElementType.Inferno)
+        {
+            Debug.Log("MAGMA!");
+
+            // Apply Stun
+            var stunEffect = new StatusEffect(StatusEffectType.Stun, 1, EffectClassification.Debuff);
+            target.ApplyStatusEffect(stunEffect, caster, null);
+
+            // Apply Burn
+            var burnEffect = new StatusEffect(StatusEffectType.Burn, 3, EffectClassification.Debuff);
+            // GDD says 1.0 Might for this DoT, which is unusual but we will follow it.
+            burnEffect.TickValue = Mathf.RoundToInt(caster.Stats.Might.Value * 1.0f);
+            target.ApplyStatusEffect(burnEffect, caster, null);
+        }
+
+        // --- MOUNTAIN COMBO ---
+        else if (primeElement == ElementType.Quake && detonatorElement == ElementType.Quake)
+        {
+            Debug.Log("MOUNTAIN!");
+
+            // Apply a 2-turn Stun
+            var stunEffect = new StatusEffect(StatusEffectType.Stun, 2, EffectClassification.Debuff);
+            target.ApplyStatusEffect(stunEffect, caster, null);
+        }
+
+        // --- ICE FORM COMBO ---
+        else if (primeElement == ElementType.Tide && detonatorElement == ElementType.Quake)
+        {
+            Debug.Log("ICE FORM!");
+
+            // Create a temporary skill object to define the Area(2) targeting
+            var areaSkill = ScriptableObject.CreateInstance<Skill>();
+            areaSkill.areaTargets = 2;
+            areaSkill.targetType = TargetType.Enemy; // It's a hostile effect
+
+            // Use the caster's GatherTargets method to find the targets
+            List<Combatant> areaTargets = caster.GatherTargets(areaSkill, target);
+
+            var freezeEffect = new StatusEffect(StatusEffectType.Freeze, 1, EffectClassification.Debuff);
+            foreach (Combatant enemy in areaTargets)
+            {
+                enemy.ApplyStatusEffect(freezeEffect, caster, null);
+            }
+        }
+
+        // --- FLOODING COMBO ---
+        else if (primeElement == ElementType.Tide && detonatorElement == ElementType.Tide)
+        {
+            Debug.Log("FLOODING!");
+
+            var areaSkill = ScriptableObject.CreateInstance<Skill>();
+            areaSkill.areaTargets = 3;
+            areaSkill.targetType = TargetType.Enemy;
+
+            List<Combatant> areaTargets = caster.GatherTargets(areaSkill, target);
+
+            foreach (Combatant enemy in areaTargets)
+            {
+                // Purge(1) on each target
+                enemy.PurgeBuffs(1);
+            }
+        }
+
+        // --- RAINING ROCK COMBO ---
+        else if (primeElement == ElementType.Cyclone && detonatorElement == ElementType.Quake)
+        {
+            Debug.Log("RAINING ROCK!");
+
+            // Create a temporary skill object to define the Random(8) targeting
+            var randomSkill = ScriptableObject.CreateInstance<Skill>();
+            randomSkill.randomHits = 8;
+            randomSkill.effectType = SkillEffectType.Damage; // It's a damaging skill
+
+            // Use the caster's GatherTargets method to get the list of 8 random hits
+            List<Combatant> randomTargets = caster.GatherTargets(randomSkill, null);
+
+            int hitDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 1.0f);
+
+            foreach (Combatant randomTarget in randomTargets)
+            {
+                // We should check for dodge on each individual hit
+                if (!randomTarget.CheckForDodge())
+                {
+                    randomTarget.TakeDamage(hitDamage);
+                }
+            }
+        }
+
+        // --- RISING TIDE COMBO ---
+        else if (primeElement == ElementType.Cyclone && detonatorElement == ElementType.Tide)
+        {
+            Debug.Log("RISING TIDE!");
+
+            var weakenEffect = new StatusEffect(StatusEffectType.Weaken, 2, EffectClassification.Debuff);
+            List<Combatant> allEnemies = GetHostileTargets(caster);
+            foreach (Combatant enemy in allEnemies)
+            {
+                enemy.ApplyStatusEffect(weakenEffect, caster, null);
+            }
+        }
+
+        // --- COLUMN OF FIRE COMBO ---
+        else if (primeElement == ElementType.Cyclone && detonatorElement == ElementType.Inferno)
+        {
+            Debug.Log("COLUMN OF FIRE!");
+
+            var areaSkill = ScriptableObject.CreateInstance<Skill>();
+            areaSkill.areaTargets = 3;
+            areaSkill.targetType = TargetType.Enemy;
+            areaSkill.effectType = SkillEffectType.Damage;
+
+            List<Combatant> areaTargets = caster.GatherTargets(areaSkill, target);
+            
+            int hitDamage = Mathf.RoundToInt(caster.Stats.Might.Value * 2.0f);
+
+            foreach (Combatant enemy in areaTargets)
+            {
+                enemy.TakeDamage(hitDamage);
+            }
+        }
     }
 }

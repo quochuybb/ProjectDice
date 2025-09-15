@@ -166,7 +166,7 @@ public class Combatant : MonoBehaviour
         }
     }
 
-private List<Combatant> GatherTargets(Skill skill, Combatant primaryTarget)
+public List<Combatant> GatherTargets(Skill skill, Combatant primaryTarget)
 {
     List<Combatant> allTargets = new List<Combatant>();
 
@@ -686,7 +686,7 @@ public void ApplyStatusEffect(StatusEffect effect, Combatant caster, Skill sourc
         }
     }
     
-    private void PurgeBuffs(int amount)
+    public void PurgeBuffs(int amount)
     {
         var removableBuffs = activeStatusEffects.Where(e => e.Classification == EffectClassification.Buff).ToList();
         if (removableBuffs.Count == 0) return;
